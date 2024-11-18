@@ -1,0 +1,31 @@
+# Kookaberry Game Apps
+This is a repository of pre-coded game apps for use with the Kookaberry micro-computer:
+- **BalanceMe** - Egg and Spoon emulator for balance lesson with logging to a CSV file
+  - Connect a buzzer peripheral to plug **P2**. This sounds when the egg is dropped.
+  - Control buttons: A=exit B=Go C/D=adjust drop angle
+  - See the description at https://learn.auststem.com.au/app/balanceme-app/
+  - Relevant classroom lesson plan https://learn.auststem.com.au/learning-plan/practise-makes-perfect/
+  - Dependencies: library module *Kapputils.mpy*
+  - The **_Config** app needs to have been used to create the necessary radio configuration file.
+  - Complementary apps: **SenseRx** or **ListenLog** receive the radio datagrams and also updates the time for all Kookaberries on the radio channel.
+- **Lander** - A simple Lunar Lander game. The aim is to land on the pad and to not crash.
+  - Control buttons: A=exit B=vertical thrust C=left thrust D=right thrust
+  - Fuel is a constraint - if you use it up you may crash.
+  - After landing or crash button B resets the game:
+  - There are no hardware peripherals or library dependencies.
+  - See the description at https://learn.auststem.com.au/app/lander/
+- **Ricochet** - A single player paddle game. The aim is to keep the ball in play as it ricochets off the walls. Each time you hit the ball you score points.  The game gets faster and the paddle narrower after each ten hits and the scores per hit increase too. If you can hit the ball with the bottom corner of the paddle you will get multiple hits and points.  (It's actually a fortuitous script bug which was kept.)
+  - There are no hardware peripherals or library dependencies.
+- **RockPaperScissors** - The classic Rock Paper Scissors game where you play against the Kookaberry:
+  - There are no hardware peripherals or library dependencies.
+  - Control buttons: A=exit B=Scissors C=Rock D=Paper
+  - Press button B, C, or D to select your item and the Kookaberry will select a random item and then display the scores.
+  - First player to score 5 wins. Then the game resets. (adjust the variable *maxscore* in the code to change the winning score)
+- **ReTimer** - A game to test the user's reaction time.
+  - The three Kookaberry LEDs are turned on in sequence at random intervals.
+  - All LEDs then switch off and the elapsed time to press button B is measured.
+  - A radio datagram is sent after each run for recording by a second Kookaberry (e.g. in a classroom setting)
+  - Dependencies: library module *Kapputils.mpy*
+  - The **_Config** app needs to have been used to create the necessary radio configuration file.
+  - Complementary apps: **SenseRx** or **ListenLog** receive the radio datagrams and also updates the time for all Kookaberries on the radio channel.
+  - See the description at https://learn.auststem.com.au/app/retimer/
