@@ -9,3 +9,12 @@ MicroPython defines the concept of an .mpy file which is a binary container file
 To use the mpy module files, download them from the repository and then download them to the Kookaberry's *lib* folder.
 
 The code folder contains the MicroPython source code for each of the library modules.  These are provided as-is for information and need not be downloaded to the Kookaberry.
+
+The modules provided here are:
+- Kapputils - utility module that reads and writes a configuration file that contains key operations parameters, e.g. radio channel, logging interval, and an ID number, plus a variety of lesser used legacy parameters.
+- kbtimer - implements a long-press functionality for the Kookaberry's buttons.
+- logger - a class that enables periodic datalogging of collected data into a CSV file in the Kookaberry's file storage system.
+- musictunes - contains a variety of Micro-bit compatible tunes that can be played by the Kookaberry.
+- rttl - provides the ability to play legacy Nokia ringtones.
+- screenplot - a class that enables graphing of data trends on the Kookaberry's display.
+- songs - a selection of RTTL Nokia ringtones to play on the Kookaberry.

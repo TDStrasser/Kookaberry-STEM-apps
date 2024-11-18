@@ -1,4 +1,4 @@
-# Kookaberry-STEM-apps
+# Kookaberry STEM Apps
 This is a repository of STEM apps in MicroPython for use with the Kookaberry micro-computer.
 The repository is organised as follows:
 - apps - contains pre-coded programs (apps) organised into folders of common interest such as music, maths, environment etc. 
