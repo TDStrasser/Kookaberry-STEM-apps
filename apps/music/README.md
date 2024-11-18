@@ -1,0 +1,21 @@
+# Kookaberry Music Apps
+This is a repository of pre-coded music-related apps for use with the Kookaberry micro-computer:
+- Metronome - A simulated metronome for providing music tempo:
+  - Port **P1** is attached to a digital capacitive sensor or switch.
+  - Port **P2** is attached to a loudspeaker peripheral.  The metronome beat is a PWM signal.
+  - See the description at https://learn.auststem.com.au/app/metronome/
+- MoveMusic - Plays musical notes using gestures tracked by the Kookaberry's in-built accelerometer:
+  - This app only works with the STM Kookaberry as the RP2040 does not have analogue outputs.
+  - Plug **P4** is connected to a loudspeaker peripheral.
+  - Plug **P5** is connected to an external button peripheral to play notes (optional).
+  - See the description at https://learn.auststem.com.au/app/move-music-app/
+- MusicDemo - Demonstration of the Kookaberry Music functionality:
+  - The library module musictunes.mpy is required to be in the Kookaberry's *lib* folder.
+  - A loudspeaker peripheral is attached to plug **P2**.
+  - See the description at https://learn.auststem.com.au/app/music-demo/
+  - Programming information for music functionality is here: https://kookaberry-reference-guide.readthedocs.io/en/latest/music.html#module-music
+- RTTLMusicDemo - This app plays RTTL format music on the Kookaberry:
+  - The RTTL formatted tunes are in the library module songs.mpy, which is required to be in the Kookaberry's *lib* folder.
+  - The rttl.mpy library module is required to be in the Kookaberry's *lib* folder.  The module was created by D.Hayman who is hereby acknowledged.
+  - A loudspeaker module is attached to plug **P2**.
+  - See the description at https://learn.auststem.com.au/app/rttlmusic-demo/
