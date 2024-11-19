@@ -22,7 +22,7 @@
 # December 2020 - modified message formats to coexist with the SenseXX apps
 # Dependencies
 #    in \lib    KappUtils.py
-#    in root    Kappconfig.txt or Kookapp.cfg
+#    in root    Kookapp.cfg
 # Begin code
 import os, time, json, machine, kooka, fonts, framebuf
 from Kapputils import config    # utility to read the configuration file
@@ -50,7 +50,7 @@ signal = bytearray([0x00, 0x80, 0x00, 0xC0, 0xF8, 0x00, 0xFC, 0x00, 0x00, 0x80, 
 icons[2] = framebuf.FrameBuffer(signal, 16, 16, framebuf.MONO_VLSB)
 
 disp = kooka.display    # instantiate the display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

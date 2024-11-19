@@ -24,8 +24,8 @@ __name__ = 'Firefly'
 #  Fireflies can be choosy or fickle and respond to any number of flashes (selected by button D)
 # Use two or more Kookaberries with the same app. All will receive the transmissions and report accordingly.
 # Dependencies
-#    in \lib    KappUtils.py
-#    in root    Kappconfig.txt or Kookaapp.cfg
+#    in \lib    KappUtils.mpy
+#    in root    Kookaapp.cfg
 # Begin code
 import os, time, json, machine, kooka, fonts, framebuf, random
 from Kapputils import config    # utility to read the configuration file
@@ -63,7 +63,7 @@ firefly_off = bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0
 ffly = [framebuf.FrameBuffer(firefly_off, 43, 40, framebuf.MONO_VLSB),framebuf.FrameBuffer(firefly_on, 43, 40, framebuf.MONO_VLSB)]
 
 disp = kooka.display    # instantiate the display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

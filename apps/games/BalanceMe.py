@@ -47,7 +47,7 @@ reset_timer = 0    # timer resets the race if excursion is too long
 reset_length = 5000    # maximum excursion time
 reset_start = 0
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 
 # initialise
 kooka.radio.enable()         # turn radio on

@@ -25,7 +25,7 @@ __name__ = 'Alarm'
 # Dependencies:
 # I/O ports and peripherals: Alarm trigger (PIR etc) on P1, alarm output on P2
 # /lib files: Kapputils.py, doomsday.py
-# /root files: Kookapp.cfg or Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx.py receives data and transmits time updates
 #------------------------------------------
@@ -44,7 +44,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

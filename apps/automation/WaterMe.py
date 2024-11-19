@@ -23,7 +23,7 @@ __name__ = 'WaterMe'
 # together with a Gravity Switch Module that switches a separately supplied water pump on and off.
 # The algorithm turns the pump on when the measured moisture is below the moist threshhold, and
 # the relay off again when the moisture reaches the wet threshhold.
-# A datalogging function has been added which is configured by the file Kappconfig.txt
+# A datalogging function has been added which is configured by the file Kookapp.cfg
 # Logging is enabled/disabled by pressing the B button.
 # The pump function is enabled/disabled by pressing the C button
 # The sensor type is changed by pressing the D button subject to the signal being consistent with sensor type. The defult is a resistive sensor.
@@ -61,7 +61,7 @@ relay.low() # switch the relay off to begin
 
 
 # Prepare for datalogging
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 interval = int(params['INTV'])      # use interval from the configuration file
 fname = __name__ + '.csv'
 f = open(fname,'w+')         # open a text file for writing

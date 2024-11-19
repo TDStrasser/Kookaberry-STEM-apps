@@ -31,7 +31,7 @@ def fileExists(filename):
 # Function loads the Kookaberry apps configuration parameters
 def config(filename):
 
-#    filename = 'Kappconfig.txt'   # file contains configuration parameters for Kookaberry apps
+#    filename = 'Kookapp.cfg'   # file contains configuration parameters for Kookaberry apps
 #
 # The parameters that are recognised are listed below. 
 # Syntax is of the form "PARAM = Value", where:
