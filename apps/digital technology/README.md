@@ -1,6 +1,7 @@
 # Kookaberry Digital Technology Apps
 This is a repository of pre-coded digital technology apps for use with the Kookaberry micro-computer.
 Digital Technology encompasses digital logic, and the digital encoding, transmission and decoding of information.
+A more detailed explanation is given here in [An Introduction to Digital Systems](https://learn.auststem.com.au/learning-plan/introduction-to-digital-systems/).
 
 The digital technology apps in this repository include the following:
 - **ASCII** - Shows the printable ASCII characters and their codes in binary, hexadecimal and decimal formats.
