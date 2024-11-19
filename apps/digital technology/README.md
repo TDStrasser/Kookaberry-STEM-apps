@@ -1,6 +1,6 @@
 # Kookaberry Digital Technology Apps
 This is a repository of pre-coded digital technology apps for use with the Kookaberry micro-computer.
-Digital Technology encompasses digital logic, and the binary or symbolic encoding, transmission and decoding of information.
+Digital Technology encompasses digital logic, and the digital encoding, transmission and decoding of information.
 
 The digital technology apps in this repository include the following:
 - **ASCII** - Shows the printable ASCII characters and their codes in binary, hexadecimal and decimal formats.
