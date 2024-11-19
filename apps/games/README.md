@@ -8,6 +8,16 @@ This is a repository of pre-coded game apps for use with the Kookaberry micro-co
   - Dependencies: library module *Kapputils.mpy*
   - The **_Config** app needs to have been used to create the necessary radio configuration file.
   - Complementary apps: **SenseRx** or **ListenLog** receive the radio datagrams and also updates the time for all Kookaberries on the radio channel.
+- **Firefly** - Emulates a Firefly by signalling using the radio, and flashing a LED.
+  - Firefly gender is chosen at random on initialisation, as is the number of flashes that distinguish the Firefly.
+  - The number of blinks can be changed by clicking button B
+  - Gender can be changed by button C (male / female)
+  - Listeners, acting as females, will respond if the flashes matches their own.
+  - Fireflies can be choosy or fickle and respond to any number of flashes (selected by button D)
+  - Button A is used to exit the app.
+  - Use two or more Kookaberries with this app. All will receive the transmissions and respond according to their gender and the number of blinks.
+  - Fill a darkened classroom with Kookaberries and watch the light display.
+  - Dependencies: library module *Kapputils.mpy* and the **_Config** app to configure the radio.
 - **Lander** - A simple Lunar Lander game. The aim is to land on the pad and to not crash.
   - Control buttons: A=exit B=vertical thrust C=left thrust D=right thrust
   - Fuel is a constraint - if you use it up you may crash.
