@@ -1,0 +1,60 @@
+# Kookaberry Automation Apps
+This is a repository of pre-coded automation apps for use with the Kookaberry micro-computer.
+Automation comprises the sensing of inputs for an algorithm that computes outputs to control one or more devices.
+
+The automation apps in this repository include the following:
+- **Alarm** - A simple alarm system that arms and disarms, with a single trigger input on a timer.
+  - The trigger timer is adjustable, the alarm reset timer is fixed.
+  - An alarm.CSV log file is updated whenever the alarm changes state. This file is stored on the Kookaberry's file storage system.
+  - Broadcasts the alarm signal on change over the Kookaberry's radio in the format [ID, Dig,alarm state].
+  - The alarm trigger (PIR etc) is attached to plug **P1**.
+  - A digital alarm output is sent to plug **P2**.
+  - The library module *Kapputils.mpy* is required to be in the Kookaberry's *lib* folder
+  - Complementary app: **SenseRx** receives the alarm data via radio and transmits time updates.
+  - See the description here https://learn.auststem.com.au/app/alarm/
+- **Analogue** - Demonstration of reading an analogue input on plug **P4**, and displaying it on a histogram.
+  - A level detector is also supplied which drives an output on plug **P2**.  
+  - The output is off below the threshold and on above the threshold.
+  - The threshold can be adjusted with the C and D buttons
+  - The Orange LED is also activated above the threshold.
+  - See the description here https://learn.auststem.com.au/app/analogue/
+- **Dimmer** - Reads an analogue signals (scale of 0 to 100) attached to plug **P4** and drives a pulse-width-modulated (PWM) output (for a LED or a motor via a power stage) on plug **P1** in accordance with the input thereby emulating a dimmer or variable speed motor control.
+  - The analogue value is displayed in a bar chart.
+  - The corresponding PWM waveform is displayed as a line graphic
+  - An option is provided to slow the PWM to illustrate flicker using button B.
+  - See the description here https://learn.auststem.com.au/app/dimmer/
+- **LightMe** - An application of the **Analogue** app in which an analogue ambient light sensor is used to switch a LED Module or MOSFET power switch on and off according to the ambient light level.
+  - The algorithm switches the relay on when the measured light is below the dark threshold, and the relay off again when the ambient light reaches the bright threshold. 
+  - Care needs to be taken that any light controlled by the relay doesn't bleed into the sensor or the light output will chatter.
+  - A datalogging function has been added which uses the logging interval configured by the **_Config** app.
+  - The display now shows a histogram of the measured light with threshold bars that can be adjusted down and up by the C and D keys respectively.  The dark threshold is set at 50% of the bright threshold.
+  - The ambient light sensor is attached to plug **P4**
+  - The LED Module or MOSFET switch is attached to plug **P2**.
+  - The library module *Kapputils.mpy* is required to be in the Kookaberry's *lib* folder.
+  - See the description here https://learn.auststem.com.au/app/lightme-app/
+- **SenseMe** - This app emulates motion detector light switch which activates only when it is dark.
+  - Motion is detected by a Passive Infra-Red (PIR) motion sensor connected to plug **P5**.
+  - Ambient light level is detected by an analogue light sensor connected to plug **P4**.
+  - The light switch or LED module is connected the plug **P2**.
+  - The app's algorithm switches the output on for an adjustable period when motion is detected and the ambient light level is low.
+  - The app's activities are recorded in the *SenseMe.CSV* file stored in the Kookaberry's file system.
+  - The library module *Kapputils.mpy* is required to be in the Kookaberry's *lib* folder.
+  - Please note that the Gravity PIR sensor has proven to be somewhat unreliable in practice. A simple pushbutton can be used instead of the PIR to simulate motion detection.
+- **Servo** - Controls a hobby servo in response to button commands or an analogue input.
+  - Connect a hobby 9g servo to plug **P1**. Note that larger servos require more power that the Kookaberry cannot supply.
+  - Connect a potentiometer or other analogue sensor or input device to plug **P4**. If not available then the Kookaberry buttons can be used instead.
+  - Control buttons: A=exit B=switch between analogue input and button modes C & D=decrease or increase the servo angle.
+  - See the description here https://learn.auststem.com.au/app/servo-app/
+- **TrafficLights** - A simulation of a road intersection employing approach sensors and multi-coloured LEDs as traffic signals.
+  - A string of four NeoPixel RGB LEDs are used as the traffic lights. They cycle RED - GREEN - AMBER - RED.  These are connected to plug **P2**.
+  - Approach or pedestrian call buttons are connected to plugs P4 and P5. These are optional as the traffic lights will cycle with their default timing.
+  - Control buttons: A=exit C=call1 D=call2
+  - The Kookaberry display shows the stages of control and timings for each of the two roads that form the intersection.
+  - Lay out the four NeoPixels and the call buttons on a model intersection to fully appreciate the operation of the traffic lights.
+- **WaterMe** - An automatic watering algorithm which detects when a plant pot is dry and activates a water pump until a sufficient level of moisture is reached.
+  - A soil moisture sensor is connected to plug **P4**.
+  - The moisture sensor can be either the resistive or the capacitive type.
+  - A switch peripheral that activates a small water pump is connected to plug **P2**.
+  - Control buttons are: A=exit B=starts datalogging C=enables the pump D=changes moisture sensor type (default is resistive)
+  - The library module *Kapputils.mpy* is required to be in the Kookaberry's *lib* folder.
+  - See the description here https://learn.auststem.com.au/app/water-me-app/
