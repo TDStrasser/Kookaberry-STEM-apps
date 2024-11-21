@@ -22,7 +22,7 @@ __name__ = 'SenseLux'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: VEML7700 sensor plugged into P3
-# /lib files: Kapputils.mpy, logger.mpy, doomsday.mpy, veml7700.mpy
+# /lib files: Kapputils.mpy, logger.mpy, (doomsday.mpy, veml7700.mpy are embedded in Kookaberry firmware)
 # /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time

@@ -22,7 +22,7 @@ __name__ = 'SensePT100'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: PT100 high temperature probe plugged into P4
-# /lib files: Kapputilspy, logger.mpy, doomsday.mpy, pt100.mpy
+# /lib files: Kapputilspy, logger.mpy, pt100.mpy, (doomsday.mpy is embedded in Kookaberry firmware)
 # /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time

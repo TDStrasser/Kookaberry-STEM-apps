@@ -23,7 +23,7 @@ __name__ = 'ReTimer'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: nil
-# /lib files: Kapputils.mpy, doomsday.mpy
+# /lib files: Kapputils.mpy, (doomsday.mpy is embedded in Kookaberry firmware)
 # /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx or ListenLog receives the radio datagrams and updates the time

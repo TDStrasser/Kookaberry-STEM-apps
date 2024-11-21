@@ -25,7 +25,7 @@ __name__ = 'Weather'
 # DEPENDENCIES:
 # I/O ports and peripherals: 
 #    P4 wind vane, P1 anemometer, P2 rain gauge, P3 BME280
-# /lib files: bme280.mpy
+# /lib files: bme280.mpy is embedded in Kookaberry firmware
 # /root files:
 # Other dependencies:
 # Complementary apps:

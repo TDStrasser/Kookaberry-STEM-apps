@@ -24,7 +24,7 @@ __name__ = 'Chances'
 #------------------------------------------
 # DEPENDENCIES:
 # I/O ports and peripherals: None
-# /lib files: shapes_lib.mpy
+# /lib files: shapes_lib.mpy is embedded in Kookaberry firmware
 # /root files: None
 # Other dependencies: None
 # Complementary apps: GraphCSV

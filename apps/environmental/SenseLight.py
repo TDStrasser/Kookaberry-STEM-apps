@@ -22,7 +22,7 @@ __name__ = 'SenseLight'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: analogue light sensor plugged into P5
-# /lib files: Kapputils.mpy, logger.mpy, doomsday.mpy
+# /lib files: Kapputils.mpy, logger.mpy, (doomsday.mpy is embedded in Kookaberry firmware)
 # /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time

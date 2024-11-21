@@ -27,7 +27,7 @@ __name__ = 'Altimeter'
 # TAGS: #sensor #pressure #altitude #i2c
 # DEPENDENCIES:
 # I/O ports and peripherals: BME/BMP280 sensor plugged into P3
-# /lib files: bme280.mpy
+# /lib files: bme280.mpy is embedded in Kookaberry firmware
 # /root files: Nil
 # Other dependencies: Nil
 # Complementary apps: Nil

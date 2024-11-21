@@ -22,7 +22,7 @@ __name__ = 'SenseCO2'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: CCS811 sensor plugged into P3
-# /lib files: Kapputils.mpy, kcpu.mpy, logger.mpy, doomsday.mpy, CCS811.mpy
+# /lib files: Kapputils.mpy, logger.mpy, (doomsday.mpy, CCS811.mpy are embedded in Kookaberry firmware)
 # /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
