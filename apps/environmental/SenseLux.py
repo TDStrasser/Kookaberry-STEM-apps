@@ -16,14 +16,14 @@ __name__ = 'SenseLux'
 # See the GNU General Public License for more details.
 #
 # Measures light level in Lux using a VEML7700 digital light sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [Lux,Light]
 # If the sensor is not present prompt is displayed. Logging suspends until a sensor is present.
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: VEML7700 sensor plugged into P3
 # /lib files: Kapputils.mpy, logger.mpy, doomsday.mpy, veml7700.mpy
-# /root files: Kappconfig.txt or Kappconfig.cfg
+# /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                        KookatimeTx can also update the time
@@ -47,7 +47,7 @@ disp = kooka.display    # initialise the OLED display
 disp.print(__name__)
 disp.print('Initialising...')
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

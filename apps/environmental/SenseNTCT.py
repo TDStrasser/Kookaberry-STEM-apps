@@ -16,14 +16,14 @@ __name__ = 'SenseNCT'
 # See the GNU General Public License for more details.
 #
 # Measure temperature using a negative temperature coefficient thermistor (NTCT) sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [NTCT,Temp]
 
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: Quokka NTCT board and probe plugged into P5
 # /lib files: Kapputilspy, logger.py, ntct.py, doomsday.py
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                    _Config.py sets up Kookaberry parameters
@@ -44,7 +44,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    # RTC t
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

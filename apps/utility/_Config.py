@@ -17,7 +17,7 @@ __name__ = '_Config'
 # See the GNU General Public License for more details.
 # DESCRIPTION:
 # Sets / edits and stores the configuration parameters for the Kookaberry apps.
-# Replaces the former Kappconfig.txt configuration file regime 
+# Replaces the former Kookapp.cfg configuration file regime 
 # Splash screen shows the operating system version information 
 # Default radio channel changed from 7 to 83 to avoid WiFi interference.
 # Creates a kdetils.cfg file for the KookaManager

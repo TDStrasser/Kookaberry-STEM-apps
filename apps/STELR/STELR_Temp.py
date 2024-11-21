@@ -22,7 +22,7 @@ __name__ = 'STELR_Temp'
 # Dependencies:
 # I/O ports and peripherals: DS18B20 probes plugged into P1, P2 and P4
 # /lib files: Kapputilspy, logger.py, onewire.py, ds18x20.py, screenplot.py
-# /root files: Kappconfig.cfg or Kappconfig.txt
+# /root files: Kappconfig.cfg or Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: GraphCSV - converts CSV files to a html Graph page
 #------------------------------------------
@@ -41,7 +41,7 @@ import screenplot    # plots trend graphs on the Kookaberry's display
 ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 id=''
 for i in range(0,min(2,len(params['NAME']))): id = id + params['NAME'][i]
 for i in range(0,min(2,len(params['SURNAME']))): id = id + params['SURNAME'][i]

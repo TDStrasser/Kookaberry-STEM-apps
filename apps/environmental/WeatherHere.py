@@ -20,7 +20,7 @@ __name__ = 'WeatherHere'
 # Temperature and Humidity using the Gravity DHT11 Sensor 
 # Windspeed derived from pulses read by a magnetic or hall sensor attached to an anemometer - limits have been placed to filter out improbable windspeeds
 # The apparent temperature is calculated using equations from the Australian Bureau of Meteorology
-# A datalogging function has been added which is configured by the file Kappconfig.txt
+# A datalogging function has been added which is configured by the file Kookapp.cfg
 # Begin code
 # Initial conditions
 import machine, kooka, dht, fonts, time, math, time
@@ -65,7 +65,7 @@ an_pin.irq(trigger=machine.Pin.IRQ_RISING, handler=pulserate)
 # Set up the radio
 kooka.radio.disable()         # turn off bluetooth to save battery power
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 interval = int(params['INTV'])      # use interval from the configuration file
 if interval < sample_interval : interval = sample_interval    # limit minimum interval
 f = open(fname,'w+')         # open a text file for writing

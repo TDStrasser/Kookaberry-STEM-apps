@@ -16,14 +16,14 @@ __name__ = 'SenseUV'
 # See the GNU General Public License for more details.
 #
 # Measures UV light level in milliwatts/sqcm using a VEML6070 digital UV sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [UV,watts]
 # If the sensor is not present prompt is displayed. Logging suspends until a sensor is present.
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: VEML6070 sensor plugged into P3
 # /lib files: Kapputils.mpy, kcpu.mpy, logger.mpy, doomsday.mpy, veml6070_i2c.mpy
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                        KookatimeTx can also update the time
@@ -44,7 +44,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    # RTC t
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

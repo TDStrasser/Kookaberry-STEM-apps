@@ -76,7 +76,7 @@ Column    Item
 # Dependencies:
 # I/O ports and peripherals: Nil
 # /lib files: Kapputils.py, kcpu.py, TimeConfig.py
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: DS3231 battery clock on P1 [optional]
 # Complementary apps: SenseXXX.py sensor apps
 #------------------------------------------
@@ -128,7 +128,7 @@ ftime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]
 rtc = RTC()    # instantiate the Real Time Clock
 time_sent = False    # one shot flag for sending time updates
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # flag to set up the radio for later use
 radio_on = False
 

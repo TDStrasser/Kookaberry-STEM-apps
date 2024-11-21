@@ -17,14 +17,14 @@ __name__='SenseDHT'
 #
 # Measure temperature and humidity using a DHT11 or DHT22 sensor
 # Initially it attempts to detect which sensor it has
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [DHT,Temp,Humid]
 # Jan 2021 - relays sensor reading data via UART 1 (plug P3)
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: DHT22 or DHT11 sensor plugged into port P2
 # /lib files: Kapputils.py, logger.py, doomsday.py
-# /root files: Kappconfig.txt or Kappconfig.cfg 
+# /root files: Kookapp.cfg or Kappconfig.cfg 
 # Other dependencies: nil
 # Complementary apps: SenseRx.py receives data and sends time update
 #                    _Config.py sets up configuration parameters
@@ -51,7 +51,7 @@ disp.print('Initialising...')
 uart = machine.UART(1, 9600,bits=8, parity=None, stop=1)
 column_h = ['Ta-degC','H-%'] # Data column headings for serial port relay
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 # flag to set up the radio for later use
 radio_on = False

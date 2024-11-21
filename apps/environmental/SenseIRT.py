@@ -16,14 +16,14 @@ __name__ = 'SenseIRT'
 # See the GNU General Public License for more details.
 #
 # Measure temperature using a non-contact infra-red digital temperature sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [GY906,AmbTemp,ObjTemp]
 # If the sensor is not present prompt is displayed. Logging suspends until a sensor is present.
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: GY-906 probe plugged into P3
 # /lib files: Kapputilspy, logger.py, doomsday.py, mlx90614.py
-# /root files: Kappconfig.txt or Kappconfig.cfg
+# /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                    _Config.py sets up the Kookaberry parameters
@@ -47,7 +47,7 @@ disp = kooka.display    # initialise the OLED display
 disp.print(__name__)
 disp.print('Initialising...')
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

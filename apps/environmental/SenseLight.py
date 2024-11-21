@@ -16,14 +16,14 @@ __name__ = 'SenseLight'
 # See the GNU General Public License for more details.
 #
 # Measures light level using a Gravity analogue light sensor (photo-transistor)
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [ID,Ill,Sensor Reading, Estimated Lux]
 # A calibration facility occurs first in which the user specifies the nominal lighting environment (indoor light, overcast, clear sky, direct sun)
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: analogue light sensor plugged into P5
 # /lib files: Kapputils.mpy, logger.mpy, doomsday.mpy
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                        KookatimeTx can also update the time
@@ -43,7 +43,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    # RTC t
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

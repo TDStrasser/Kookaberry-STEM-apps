@@ -16,13 +16,13 @@ __name__ = 'SenseAnlg'
 # See the GNU General Public License for more details.
 #
 # Measure 1 or 2 analogue signals (scales of 0 to 100, or 0 to 3.3V, or 0 to 4095 selected via button C) attached to P4 and P5
-# Logs into a file at an interval specified in Kappconfig.txt or and on significant change
+# Logs into a file at an interval specified in Kookapp.cfg or and on significant change
 # Broadcasts the analogue signals over the packet radio in the format [Anlg,P1,P4,P5]
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: Analogue peripherals on P4 and optionally P5
 # /lib files: Kapputils.py, kcpu.py, logger.py, doomsday.py
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx.py receives data and transmits time updates
 #------------------------------------------
@@ -42,7 +42,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

@@ -28,7 +28,7 @@ __name__ = 'BounceMe'
 # TAGS: #log #accelerometer #graph #sensor
 # DEPENDENCIES:
 # I/O ports and peripherals: No ports nor peripherals are used
-# /lib files: Nil
+# /lib files: kbtimer.mpy, Kapputils.mpy
 # /root files: Nil
 # Other dependencies: Nil
 # Complementary apps: Nil
@@ -43,7 +43,7 @@ import kbtimer    # long button press utility
 b_timer = kbtimer.KBTimer(kooka.button_b, 1000) # instantiate a buttom B timer object
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # turn off the radio to save power
 kooka.radio.disable()
 # Generate the Kookaberry's ID for the log file

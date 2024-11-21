@@ -16,14 +16,14 @@ __name__ = 'SenseSDS'
 # See the GNU General Public License for more details.
 #
 # Measure air particles using a SDS011 particulate sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [SDS011,PM2.5,PM10]
 # If the sensor is not present or not answering a prompt is displayed. Logging suspends until a sensor is present.
 #------------------------------------------
 # Dependencies:
-# I/O ports and peripherals: SDS011 plugged into P1
+# I/O ports and peripherals: SDS011 plugged into P3
 # /lib files: Kapputilspy, kcpu.py, logger.py, doomsday.py, onewire.py, sds011.py
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #------------------------------------------
@@ -44,7 +44,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    # RTC t
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

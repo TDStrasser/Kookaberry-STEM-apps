@@ -23,7 +23,7 @@ __name__ = 'STELR_LxUV'
 # Dependencies:
 # I/O ports and peripherals: VEML sensor plugged into P3, UV sensor into P4
 # /lib files: Kapputilspy, veml7700.py, screenplot.py
-# /root files: Kappconfig.cfg or Kappconfig.txt
+# /root files: Kappconfig.cfg or Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: GraphCSV - converts CSV files to a html Graph page
 #------------------------------------------
@@ -38,7 +38,7 @@ import screenplot    # plots trend graphs on the Kookaberry's display
 from math import log10
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 id=''
 for i in range(0,min(2,len(params['NAME']))): id = id + params['NAME'][i]
 for i in range(0,min(2,len(params['SURNAME']))): id = id + params['SURNAME'][i]

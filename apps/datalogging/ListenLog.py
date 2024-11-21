@@ -17,7 +17,7 @@ __name__ = 'ListenLog'
 #
 # This program listens to the packet radio, identifies the lesson reports,
 # and logs any messages received for the first-identified lesson
-# Lesson ID can be fixed by the Kappconfig.txt file or 
+# Lesson ID can be fixed by the Kookapp.cfg file or 
 # else is taken to be the first received valid lesson ID
 # Modified to open and close the logging file for each message to minimise
 # the likelihood of data loss on improper exit (such as power loss).

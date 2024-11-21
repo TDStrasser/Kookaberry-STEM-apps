@@ -16,13 +16,13 @@ __name__ = 'SenseAcc'
 # See the GNU General Public License for more details.
 #
 # Measure overall acceleration using the Kookaberry's inbuilt accelerometer
-# Logs average and peak acceleration into a file at an interval specified in Kappconfig.txt
+# Logs average and peak acceleration into a file at an interval specified in Kookapp.cfg
 # Broadcasts the average and maximum accelerationss over the packet radio in the format [SHK,AccAvg,AccMax]
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: No ports nor peripherals are used
 # /lib files: Kapputils.py, kcpu.py, logger.py, doomsday.py
-# /root files: Kappconfig.txt
+# /root files: Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx.py receives data and transmits time updates
 #------------------------------------------
@@ -42,7 +42,7 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 kooka.radio.enable()
 chan = int(params['CHANNEL'])      # use channel from the configuration file

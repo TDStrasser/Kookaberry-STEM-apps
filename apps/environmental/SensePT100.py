@@ -16,14 +16,14 @@ __name__ = 'SensePT100'
 # See the GNU General Public License for more details.
 #
 # Measure temperature using a PT100 resistance temperature detector (RTD) sensor
-# Logs the measurements into a file at an interval specified in Kappconfig.txt
+# Logs the measurements into a file at an interval specified in Kookapp.cfg
 # Broadcasts the sensor readings over the packet radio in the format [PT10,Temp]
 # There is no way to tell if a sensor is not present.
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: PT100 high temperature probe plugged into P4
 # /lib files: Kapputilspy, logger.mpy, doomsday.mpy, pt100.mpy
-# /root files: Kappconfig.txt or Kappconfig.cfg
+# /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time
 #                    _Config sets up Kookaberry parameters
@@ -47,7 +47,7 @@ disp = kooka.display    # initialise the OLED display
 disp.print(__name__)
 disp.print('Initialising...')
 
-params = config('Kappconfig.txt')   # read the configuration file
+params = config('Kookapp.cfg')   # read the configuration file
 # set up the radio for later use
 radio_on = False    # Indicates radio initialisation state
 id=''
