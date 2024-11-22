@@ -71,10 +71,10 @@ def sensor_init(i2c, adx):
             veml = VEML7700(address=adx, i2c=i2c, it=100, gain=1/8)
             return veml
         
-i2c = machine.I2C(scl='PA9',sda='PA10', freq=50000)
+i2c = machine.SoftI2C(scl='PA9',sda='PA10', freq=50000)
 veml = sensor_init(i2c, 0x10)
 if not veml: # Couldn't find sensor, swap pins on I2c and try again
-    i2c = machine.I2C(scl='PA10',sda='PA9', freq=50000)
+    i2c = machine.SoftI2C(scl='PA10',sda='PA9', freq=50000)
     veml = sensor_init(i2c, 0x10)
 light = 0
 dspin = 'P3'
@@ -102,10 +102,10 @@ while not kooka.button_a.was_pressed():
             dlog.write()    # writes the datalogger string when next due
         except:    # Couldn't take a reading from the sensor
             light = 0
-            i2c = machine.I2C(scl='PA9',sda='PA10', freq=50000)
+            i2c = machine.SoftI2C(scl='PA9',sda='PA10', freq=50000)
             veml = sensor_init(i2c, 0x10)
             if not veml: # Couldn't find sensor, swap pins on I2c and try again
-                i2c = machine.I2C(scl='PA10',sda='PA9', freq=50000)
+                i2c = machine.SoftI2C(scl='PA10',sda='PA9', freq=50000)
                 veml = sensor_init(i2c, 0x10)
 
 # Transmit data over the radio

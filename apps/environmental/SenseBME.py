@@ -65,12 +65,12 @@ dlog = logger.Dlog(__name__+'.csv',int(params['INTV']),'Date-Time,AmbT-degC,Humi
 dlog.start()    # Start the datalogger
 
 dspin = 'P3'
-i2c = machine.I2C(scl=machine.Pin('P3B'), sda=machine.Pin('P3A'), freq=50000)
+i2c = machine.SoftI2C(scl=machine.Pin('P3B'), sda=machine.Pin('P3A'), freq=50000)
 s_flag = False
 try:
     bme = bme280.BME280(i2c=i2c) # Initialise the BME280 sensor
 except: # Sensor not detected, swap scl and sda lines and try again
-    i2c = machine.I2C(scl=machine.Pin('P3A'), sda=machine.Pin('P3B'), freq=50000)
+    i2c = machine.SoftI2C(scl=machine.Pin('P3A'), sda=machine.Pin('P3B'), freq=50000)
     try:
         bme = bme280.BME280(i2c=i2c) # Initialise the BME280 sensor
     except: # BME280 still not found

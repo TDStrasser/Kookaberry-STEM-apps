@@ -30,7 +30,7 @@ __name__ = 'STELR_LxUV'
 # Begin code
 # Initial conditions
 
-from machine import I2C, Pin, ADC
+from machine import SoftI2C, Pin, ADC
 import kooka, fonts, time, screenplot
 from veml7700 import *
 from Kapputils import config    # module to read the configuration file
@@ -51,9 +51,9 @@ f.close()    # Closes the file
 # Set up the sensors
 samples = [-100] * 2    # The light measurements
 sstrs = ['- '] * 2    # String renditions of measurements
-i2c = I2C(sda=Pin('PA9'), scl=Pin('PA10'), freq=50000)    # Note Gravity and Quokka boards have opposite SCL and SDA - set for Quokka
+i2c = SoftI2C(sda=Pin('PA9'), scl=Pin('PA10'), freq=50000)    # Note Gravity and Quokka boards have opposite SCL and SDA - set for Quokka
 if len(i2c.scan()) is 0:    # check for any I2c response
-    i2c = I2C(scl=Pin('PA9'), sda=Pin('PA10'), freq=50000)    # if none swap pins
+    i2c = SoftI2C(scl=Pin('PA9'), sda=Pin('PA10'), freq=50000)    # if none swap pins
 lx_ok = False
 
 uv_pin = 'P5'    # input port for analogue UV sensor

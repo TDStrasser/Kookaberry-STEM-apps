@@ -61,7 +61,7 @@ dlog = logger.Dlog(__name__+'.csv',int(params['INTV']),'Date-Time,UV-mW/sqcm')  
 dlog.start()    # Start the datalogger
 
 dspin = 'P3'
-i2c = machine.I2C(sda=machine.Pin('PA9'), scl=machine.Pin('PA10'), freq=50000)
+i2c = machine.SoftI2C(sda=machine.Pin('PA9'), scl=machine.Pin('PA10'), freq=50000)
 s_flag = False
 uv = veml6070_i2c.Veml6070(i2c)
 

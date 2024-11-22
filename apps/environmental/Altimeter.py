@@ -58,10 +58,10 @@ def sensor_init(i2c, adx):
             dev = BME280(address = x, i2c=i2c, it=100, gain=1/8)
             return dev
         
-i2c = machine.I2C(scl='PA9',sda='PA10', freq=50000)
+i2c = machine.SoftI2C(scl='PA9',sda='PA10', freq=50000)
 bme = sensor_init(i2c, bme_adx)
 if not bme: # Couldn't find sensor, swap pins on I2c and try again
-    i2c = machine.I2C(scl='PA10',sda='PA9', freq=50000)
+    i2c = machine.SoftI2C(scl='PA10',sda='PA9', freq=50000)
     bme = sensor_init(i2c, bme_adx)
     if bme: i2c_swap = True
 temp = 0
@@ -86,11 +86,11 @@ while not kooka.button_a.was_pressed():
             temp = 0
             press = 0
             humid = 0
-            i2c = machine.I2C(scl='PA9',sda='PA10', freq=50000)
+            i2c = machine.SoftI2C(scl='PA9',sda='PA10', freq=50000)
             bme = sensor_init(i2c, 0x10)
             if bme: i2c_swap = True
             if not bme: # Couldn't find sensor, swap pins on I2c and try again
-                i2c = machine.I2C(scl='PA10',sda='PA9', freq=50000)
+                i2c = machine.SoftI2C(scl='PA10',sda='PA9', freq=50000)
                 bme = sensor_init(i2c, 0x10)
 # Adjust QNH barometric pressure as necessary
     if mode: # If in set altitude mode

@@ -64,7 +64,7 @@ dlog = logger.Dlog(__name__+'.csv',int(params['INTV']),'Date-Time,eCO2-ppm,tVOC-
 dlog.start()    # Start the datalogger
 
 s_pin = 'P3'
-i2c = machine.I2C(scl='PA9',sda='PA10', freq=100000)
+i2c = machine.SoftI2C(scl='PA9',sda='PA10', freq=100000)
 s_flag = False
 s = CCS811.CCS811(i2c)
 time.sleep(1)    #let the sensor start up and stabilise

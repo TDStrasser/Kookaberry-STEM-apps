@@ -30,7 +30,7 @@ __name__ = 'STELR_IRT'
 # Begin code
 # Initial conditions
 
-from machine import I2C, Pin
+from machine import SoftI2C, Pin
 import kooka, fonts, time, screenplot
 import mlx90614
 from Kapputils import config    # module to read the configuration file
@@ -53,9 +53,9 @@ dlog.start()    # Start the datalogger
 # Set up the sensors
 temps = [-100] * 2    # The temperatures
 tstrs = [''] * 2    # String renditions of temperatures
-i2c = I2C(sda=Pin('PA9'), scl=Pin('PA10'), freq=50000)    # Note Gravity and Quokka boards have opposite SCL and SDA - set for Quokka
+i2c = SoftI2C(sda=Pin('PA9'), scl=Pin('PA10'), freq=50000)    # Note Gravity and Quokka boards have opposite SCL and SDA - set for Quokka
 if len(i2c.scan()) is 0:    # check for any I2c response
-    i2c = I2C(scl=Pin('PA9'), sda=Pin('PA10'), freq=50000)    # if none swap pins
+    i2c = SoftI2C(scl=Pin('PA9'), sda=Pin('PA10'), freq=50000)    # if none swap pins
 ir_ok = False
 
 def val2str(v):    # Render value as string

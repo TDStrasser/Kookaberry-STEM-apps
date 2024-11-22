@@ -64,7 +64,7 @@ dlog = logger.Dlog(__name__+'.csv',int(params['INTV']),'Date-Time,AmbT-degC,ObjT
 dlog.start()    # Start the datalogger
 
 dspin = 'P3'
-i2c = machine.I2C(scl=machine.Pin('P3B'), sda=machine.Pin('P3A'), freq=50000)
+i2c = machine.SoftI2C(scl=machine.Pin('P3B'), sda=machine.Pin('P3A'), freq=50000)
 s_flag = False
 s_present = False
 

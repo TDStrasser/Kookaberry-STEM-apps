@@ -83,7 +83,7 @@ f.write('[\n')    # write JSON delimiter
 f.close()
 
 # Set up the main I2C bus containing: DS3231 @ 0x68, BME280 @ 0x77
-i2c = machine.I2C(scl='PA9', sda='PA10')
+i2c = machine.SoftI2C(scl='PA9', sda='PA10')
 
 # ------ Sets up the Real Time Clock --------
 
