@@ -22,7 +22,7 @@ __name__ = 'SenseIRT'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: GY-906 probe plugged into P3
-# /lib files: Kapputilspy, logger.py, doomsday.py, mlx90614.py
+# /lib files: Kapputilspy, logger.py, (doomsday.py, mlx90614.py are embedded in the Kookaberry firmware)
 # /root files: Kookapp.cfg or Kappconfig.cfg
 # Other dependencies: Nil
 # Complementary apps: SenseRx receives the radio datagrams and updates the time

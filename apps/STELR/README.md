@@ -18,8 +18,8 @@ In this repository:
   - The IR sensor measures the target object temperature and the sensor's ambient temperature.
   - Logs the measurements into a *STELR_IRT.CSV* file at an interval specified in the configuration file.
   - If a sensor is not present then a default value (-100) is recorded for that sensor.
-  - The MLX90614 IR sensor is connected to plug **P3**. (Requires the *mlx90614.mpy* library module)
-  - The following library modules must be in the Kookaberry's *lib* folder: *Kapputils.mpy*, *logger.mpy*, *mlx90614.mpy*, *screenplot.mpy*
+  - The MLX90614 IR sensor is connected to plug **P3**.
+  - The following library modules must be in the Kookaberry's *lib* folder: *Kapputils.mpy*, *logger.mpy*, *screenplot.mpy*
 - **STELR_LxUV** - Measures visible and UV light intensities using the VEML7700 visible light sensor and an analogue UV sensor.
   - Measurements are taken whenever button B is pressed and the values are logged in the *STELR_LxUV.CSV* file on the Kookaberry's file store.
   - Manual measurement initiation allows changing of glass panels between comparative measurements.

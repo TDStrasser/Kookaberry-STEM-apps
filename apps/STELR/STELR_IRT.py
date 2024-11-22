@@ -22,7 +22,7 @@ __name__ = 'STELR_IRT'
 #------------------------------------------
 # Dependencies:
 # I/O ports and peripherals: MLX90614 sensor plugged into P3
-# /lib files: Kapputilspy, logger.py, mlx90614.py, screenplot.py
+# /lib files: Kapputilspy, logger.py, screenplot.py, (mlx90614.py is embedded in the Kookaberry firmware)
 # /root files: Kappconfig.cfg or Kookapp.cfg
 # Other dependencies: Nil
 # Complementary apps: GraphCSV - converts CSV files to a html Graph page

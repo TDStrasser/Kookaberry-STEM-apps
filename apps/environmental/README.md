@@ -44,7 +44,6 @@ They all share these characteristics:
     - Logs the measurements into a CSV file at an interval specified in Kookapp.cfg
     - Broadcasts the sensor readings over the packet radio in the format [ID,GY906,AmbTemp,ObjTemp]
     - If the sensor is not present prompt is displayed. Logging suspends until a sensor is present.
-    - Requires the library module *mlx90614.mpy* to be present in the Kookaberry's *lib* folder.
   - **SenseLight** - Measures light level using a Gravity analogue light sensor (photo-transistor) connected to plug **P5**.
     - Logs the measurements into a CSV file at an interval specified in Kookapp.cfg
     - Broadcasts the sensor readings over the packet radio in the format [ID,Ill,Sensor Reading, Estimated Lux]
