@@ -133,7 +133,7 @@ Usage -
     # Use this whenever any windvane constant is changed
     weather.windvane_read() # reads the windvane voltage and returns an index to the direction array if successful, or -1 is the read fails
 ```
-- **veml6070_i2c** - 
+- **veml6070_i2c** - Class and functions to measure UV light level (default Watts/sqm) using a VEML6070 digital UV sensor.
   - Based on the driver at https://github.com/cmur2/python-veml6070 with pure I2C bus for the Kookaberry adaptation
   - Redundant SMBbus code lines have been commented out and replaced by I2C code
 ```
