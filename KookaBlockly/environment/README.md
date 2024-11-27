@@ -1,0 +1,22 @@
+# KookaBlockly Environment Apps
+These pre-coded apps use various sensors to measure the physical environment:
+- **BME280 Logger** - Reads temperature, humidity and pressure and logs the readings in a *data.CSV* file on the Kookaberry's file system.
+  - Connect the **BME280** sensor to plug **P3** on the Kookaberry.
+  - On completion, the data.CSV file can be downloaded from the Kookaberry via USB connection to a PC.
+- **Fire Danger** - senses the ambient temperature and drives a servo to position a pointer on a dial which simulates a real-world fire danger sign.
+  - Connect a DS18B20 temperature sensor to plug **P2**.
+  - Connect a 9g hobby servo to plug **P1**.
+  - See a similar example here https://learn.auststem.com.au/learning-plan/bushfire-risk-indicator/
+- **Soil Moisture** - uses a resistive soil moisture sensor and displays the reading in bar-graph form on the display.
+  - Connect a resistive soil moisture sensor to plug **P1**.
+  - To use a capacitive soil moisture sensor, reverse the initial values of the variable *dry* and *wet* in the script.
+  - Insert the sensor into soil to measure its moisture.
+  - Calibration of the dry and wet values can also be achieved by probing dry soil and pressing button C, then wet soil and pressing button D.  Note the calibration is not retained after the app exits.
+- **VEML7700 Logger** - Reads visible light intensity and logs the readings in a *data.CSV* file on the Kookaberry's file system.
+  - Connect the **VEML7700** sensor to plug **P3** on the Kookaberry.
+  - On completion, the data.CSV file can be downloaded from the Kookaberry via USB connection to a PC.
+- **Weather Station** - a KookaBlockly version of the WeatherHere MicroPython app which reads temperature, humidity and wind speed.
+  - The physical arrangement is the same as described here https://learn.auststem.com.au/app/weatherhere-app/
+    - A DHT11 sensor is connected to plug **P1**.
+    - An optical pulse sensor for the anemometer is connected to plug **P2**.
+    - This script does not log data, but it can be modified per the logging apps in this folder to add logging functionality.
