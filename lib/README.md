@@ -85,6 +85,21 @@ The Kookaberry Reference Guide contains a section on the [Peripherals Module Lib
 The Kookaberry can use other sensors beyond those catered for in the Kookaberry firmware.  To use these other sensors, library modules are required containing the necessary driver software.
 
 Included here are library modules for the following supplementary sensors:
+- **hcsr04** (and **rcwl-1601**) - Ultrasonic distance sensor.
+  - The sensor uses ultrasonic echolocation to detect objects within a range of 2 to 450 cm.
+  - Note the HCSR04 is a 5 volt module and so not compatible with the Kookaberry which uses 3.3 volts.
+  - Instead use the 3.3V RCWL-1601 ultrasonic distance sensor, optionally with the Quokka QK-02-065 adapter module for convenient connection with the Kookaberry.
+
+```
+Usage:
+    from hcsr04 import HCSR04
+
+    sensor = HCSR04(trigger_pin='P3A', echo_pin='P3B') # Uses connector P3 on the Kookaberry
+    distance, pulse = sensor.distance_mm() # Return distance in mm and pulse echo delay in microseconds.
+    print('D: %d mm' % distance, 0, 30 )
+    print('P: %d usec' % pulse, 0, 40)
+```
+
 - **pt100** - Module to measure temperature using a PT100 resistance temperature detector (RTD) probe # which is interfaced via a wheatstone bridge and analogue amplifier module.
   - The sensor is a DFRobot SEN0198 High Temperature Sensor
   - The equation given by DFRobot to convert the module analogue voltage to sensor resistance is ```res =  (1800 * voltage + 220.9 * 18) / (2.209 * 18 - voltage)``` 
