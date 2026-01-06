@@ -14,7 +14,7 @@ This repository is organised as follows:
   - **mpy STM** - MicroPython bytecode modules for the STM Kookaberry
 
 ## PiicoDev Documentation
-Documentation for the PiicoDev modules is available online.  The most relevant documents are here: [PiicoDev for the Raspberry Pico](https://core-electronics.com.au/piicodev-starter-kit-raspberry-pi-pico-guides-0)
+Documentation for the PiicoDev modules is available online.  The most relevant documents are here: [PiicoDev Starter Kit for the Raspberry Pico](https://core-electronics.com.au/piicodev-starter-kit-raspberry-pi-pico-guides-0)
 
 The main changes to use the PiicoDev modules with the Kookaberry are:
 - The Kookaberry uses JST PH connectors and PiicoDev modules use the physically smaller JST SH connectors. Consequently a 4-pin JST PH to JST SH Cable (available from Core Electronics) is required to connect a PiicoDev module to the Kookaberry.
@@ -27,7 +27,7 @@ The following are the PiicoDev modules covered by this repository (so far):
 - RFID Module - library module and sample script included here.
 - OLED Display - library module and sample script included here. Note the PiicoDev SSD1306 OLED display module is very small and may be difficult to read.
 
-These other known PiicoDev modules are not as yet catered for but may be in the future:
+These other PiicoDev modules in the PiicoDev Starter Kit are not as yet catered for but may be in the future:
 - RGB LED Module - an alternative is to use NeoPixels connected via a OneWire interface.
 - Buzzer Module - an alternative is to use a digital buzzer module with a Pin or PWM interface.
 - Capacitive Touch Sensor
@@ -38,7 +38,7 @@ These other known PiicoDev modules are not as yet catered for but may be in the 
 There are numerous other PiicoDev modules available [here](https://core-electronics.com.au/piicodev.html) which may be catered for over time.
 
 
-##Important Disclaimer
+## Important Disclaimer
 To the fullest extent permitted by law, AustSTEM and the authors named herein absolutely disclaim all warranties, expressed or implied, including, but not limited to, implied warranties of merchantability and fitness for any particular purpose. 
 
 No warranty is given that this software will be free of errors, or that defects in the software will be corrected.

@@ -6,7 +6,7 @@ There are two types of Kookaberry distinguished by the microprocessor they use:
 
 MicroPython defines the concept of an .mpy file which is a binary container file format that holds precompiled code, and which can be imported like a normal .py module.  The bytecode, however, differs between the Pico and STM microprocessors.  The two mpy folders contain the bytecode module files for the respective microprocessors.
 
-To use the mpy module files, download them from the repository and then download them to the Kookaberry's *lib* folder.
+To use the mpy module files, download them from the relevant repository and then download them to the Kookaberry's *lib* folder.
 
 The code folder contains the MicroPython source code for each of the library modules.  These are provided as-is for information and need not be downloaded to the Kookaberry.
 
