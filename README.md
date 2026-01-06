@@ -7,6 +7,7 @@ The repository is organised as follows:
   - **mpy RP2040** - MicroPython bytecode for the RP2040 Kookaberry
   - **mpy STM** - MicroPython bytecode modules for the STM Kookaberry
 - **KookaBlockly** - contains scripts using the **KookaBlockly** visual scripting language for the Kookaberry.  These scripts are organised into folders of common interest.
+- **PiicoDev** - contains scripts and library modules for the PiicoDev modules marketed by Core Electronics.
 
 ## Kookaberry Documentation
 The following documentation is available online:
