@@ -26,6 +26,8 @@ The following are the PiicoDev modules covered by this repository (so far):
 - BME280 Atmospheric Sensor - plug compatible with the Kookaberry and its standard firmware. No additonal software required.
 - RFID Module - library module and sample script included here.
 - OLED Display - library module and sample script included here. Note the PiicoDev SSD1306 OLED display module is very small and may be difficult to read.
+- Distance Sensor - a very capable sensor which uses the VL53L1X Time-of-Flight (ToF) laser-ranging sensor, giving millimetre resolution up to a distance of 4 metres with up to 50 readings per second.
+
 
 These other PiicoDev modules in the PiicoDev Starter Kit are not as yet catered for but may be in the future:
 - RGB LED Module - an alternative is to use NeoPixels connected via a OneWire interface.
@@ -33,7 +35,6 @@ These other PiicoDev modules in the PiicoDev Starter Kit are not as yet catered 
 - Capacitive Touch Sensor
 - Colour Sensor
 - Accelerometer - note the Kookaberry hardware contains an accelerometer (but not the standard Pico boards). An LM303C accelerometer is however supported by the standard Kookaberry firmware.
-- Distance Sensor - an alternative in the meantime is to use the 3.3V RCWL-1601 ultrasonic distance sensor and the hcsr04 library module provided elsewhere in this repository.
 
 There are numerous other PiicoDev modules available [here](https://core-electronics.com.au/piicodev.html) which may be catered for over time.
 
