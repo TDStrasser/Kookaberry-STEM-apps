@@ -59,7 +59,7 @@ set_led('off')
 
 # Set up the I2C bus and RFID reader
 i2c = SoftI2C(sda = Pin("P3B"), scl=Pin("P3A"))
-rfid = PiicoDev_RFID(i2c)   # Initialise the RFID module at the default address (0x2c)
+rfid = PiicoDev_RFID(bus=i2c)   # Initialise the RFID module at the default address (0x2c)
 
 # Initialisations
 price = 3 # dollars (whole dollars only)

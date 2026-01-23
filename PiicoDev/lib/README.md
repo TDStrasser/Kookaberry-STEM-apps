@@ -24,9 +24,16 @@ The modules provided to date are:
 Usage:
     from PiicoDev_RFID_Kookaberry import PiicoDev_RFID
     from machine import Pin, SoftI2C
-    # Set up the I2C bus and RFID reader
+    # Set up the I2C bus
     i2c = SoftI2C(sda = Pin("P3B"), scl=Pin("P3A"))
+    # Set up the RFID Reader on the I2C bus
     rfid = PiicoDev_RFID(i2c)   # Initialise the RFID module at the default address (0x2c)
+    # Optional parameters: address=0xNN or asw=[x,y] corresponding to the setting of the ASW switch on the hardware.
+    # The addresses corresponding to the switch settings are printed on the back of the hardware module.
+    # asw= [0,0]: address=0x2c
+    # asw= [1,0]: address=0x2d
+    # asw= [0,1]: address=0x2e
+    # asw= [1,1]: address=0x2f
     # Thereafter use the standard PiicoDev library API calls...
 
 ```
@@ -81,9 +88,16 @@ Usage:
     
     # Then instantiate the PiicoDev RGB module using the I2C bus
     leds = PiicoDev_RGB(bus=i2c)
-    
+    # Optional parameters: address=0xNN or id=[x,y,0,0] corresponding to the setting of the ID switch on the hardware.
+    # The addresses corresponding to the switch settings are printed on the back of the hardware module.
+    # id = [0,0,0,0]: address=0x08
+    # id = [1,0,0,0]: address=0x09
+    # id = [0,1,0,0]: address=0x0a
+    # id = [1,1,0,0]: address=0x0b
+    # Note id allows for 4 switches though only 2 are provided on the PiicoDev hardware module.
+
     # setPixel
-    leds.setPixel(n, colour) will set led # n to the RGB colour colour = [r,g,b] where r,g,b are 0-255
+    leds.setPixel(n, colour) will set led #n (range 0 to 2) to the RGB colour colour = [r,g,b] where r,g,b are 0-255
     # Once the pixels are set with setPixel(), the new values must be pushed to the physical LEDs with show().
     
     # show
@@ -107,5 +121,5 @@ Usage:
     
     # pwrLED
     leds. pwrLED(True/False) # will set the LED to True = on, False = off
-    
+
 ```
