@@ -27,7 +27,7 @@ Usage:
     # Set up the I2C bus
     i2c = SoftI2C(sda = Pin("P3B"), scl=Pin("P3A"))
     # Set up the RFID Reader on the I2C bus
-    rfid = PiicoDev_RFID(i2c)   # Initialise the RFID module at the default address (0x2c)
+    rfid = PiicoDev_RFID(bus=i2c)   # Initialise the RFID module at the default address (0x2c)
     # Optional parameters: address=0xNN or asw=[x,y] corresponding to the setting of the ASW switch on the hardware.
     # The addresses corresponding to the switch settings are printed on the back of the hardware module.
     # asw= [0,0]: address=0x2c
