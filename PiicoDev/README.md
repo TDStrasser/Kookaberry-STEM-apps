@@ -27,10 +27,10 @@ The following are the PiicoDev modules covered by this repository (so far):
 - RFID Module - library module and sample script included here.
 - OLED Display - library module and sample script included here. Note the PiicoDev SSD1306 OLED display module is very small and may be difficult to read.
 - Distance Sensor - a very capable sensor which uses the VL53L1X Time-of-Flight (ToF) laser-ranging sensor, giving millimetre resolution up to a distance of 4 metres with up to 50 readings per second.
+- RGB LED Module - three RGB WS2812 LEDs that can be individually controlled to create dazzling patterns and colours, or work like a status indicator.
 
 
 These other PiicoDev modules in the PiicoDev Starter Kit are not as yet catered for but may be in the future:
-- RGB LED Module - an alternative is to use NeoPixels connected via a OneWire interface.
 - Buzzer Module - an alternative is to use a digital buzzer module with a Pin or PWM interface.
 - Capacitive Touch Sensor
 - Colour Sensor

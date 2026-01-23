@@ -69,3 +69,43 @@ Usage:
         sleep_ms(100)
 
 ```
+
+- **PiicoDev_RGB_Kookaberry** interfaces the [PiicoDev RGB LED Module](https://core-electronics.com.au/guides/raspberry-pi-pico/piicodev-rgb-led-module-raspberry-pi-pico-guide/). See the script PiicoDev_RGB_Demo.py in the PiicoDev apps folder for a scripting example.
+```
+Usage:
+    from machine import Pin, SoftI2C
+    from PiicoDev_RGB_Kookaberry import PiicoDev_RGB, wheel
+    
+    # First set up the I2C bus
+    i2c = SoftI2C(sda=Pin("P3B") ,scl=Pin("P3A"))
+    
+    # Then instantiate the PiicoDev RGB module using the I2C bus
+    leds = PiicoDev_RGB(bus=i2c)
+    
+    # setPixel
+    leds.setPixel(n, colour) will set led # n to the RGB colour colour = [r,g,b] where r,g,b are 0-255
+    # Once the pixels are set with setPixel(), the new values must be pushed to the physical LEDs with show().
+    
+    # show
+    leds.show() # Updates the physical LEDs with data set by eg. setPixel().
+    
+    # clear
+    leds.clear() # Blanks all the RGB LEDs. It is not necessary to call show() after calling clear().
+    
+    # setBrightness
+    leds.setBrightness(x) # controls the maximum brightness of the RGB LEDs, where x may be between 0-255. 
+    # This function is useful to avoid being dazzled by the bright LEDs, or to keep current consumption low.
+    
+    # fill
+    leds.fill(colour) # where colour is a 3 byte RGB array [rr,gg,bb] each in the range 0-255.
+    # Will fill all RGB LEDs with the colour specified by the RGB list colour. Automatically updates the LEDs by calling show()
+    
+    # wheel
+    wheel(h,s,v) # where h is hue (0 to 1), s is saturation (0 to 1) and v is brightness (0 to 1).
+    # Returns an RGB colour list [r,g,b] colour from the colour wheel.
+    # Note the Core Electronics guide for the function wheel() is incorrectly described
+    
+    # pwrLED
+    leds. pwrLED(True/False) # will set the LED to True = on, False = off
+    
+```
