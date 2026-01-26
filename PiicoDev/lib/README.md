@@ -100,6 +100,7 @@ Usage:
 ```
 
 - **PiicoDev_RGB_Kookaberry** interfaces the [PiicoDev RGB LED Module](https://core-electronics.com.au/guides/raspberry-pi-pico/piicodev-rgb-led-module-raspberry-pi-pico-guide/). See the script PiicoDev_RGB_Demo.py in the PiicoDev apps folder for a scripting example.
+Also see [A Beginner’s Guide to understand the HSV Color Model](https://medium.com/@dijdomv01/a-beginners-guide-to-understand-the-color-models-rgb-and-hsv-244226e4b3e3)
 ```
 Usage:
     from machine import Pin, SoftI2C
@@ -138,8 +139,8 @@ Usage:
     
     # wheel
     wheel(h,s,v) # where h is hue (0 to 1), s is saturation (0 to 1) and v is brightness (0 to 1).
-    # Returns an RGB colour list [r,g,b] colour from the colour wheel.
-    # Note the Core Electronics guide for the function wheel() is incorrectly described
+    # Returns an RGB colour list [r,g,b] colour from the HSV colour wheel. 
+    # Note the Core Electronics guide for the function wheel() is incorrectly described.
     
     # pwrLED
     leds. pwrLED(True/False) # will set the LED to True = on, False = off
