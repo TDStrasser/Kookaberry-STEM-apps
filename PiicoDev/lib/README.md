@@ -30,11 +30,33 @@ Usage:
     rfid = PiicoDev_RFID(bus=i2c)   # Initialise the RFID module at the default address (0x2c)
     # Optional parameters: address=0xNN or asw=[x,y] corresponding to the setting of the ASW switch on the hardware.
     # The addresses corresponding to the switch settings are printed on the back of the hardware module.
-    # asw= [0,0]: address=0x2c
-    # asw= [1,0]: address=0x2d
-    # asw= [0,1]: address=0x2e
-    # asw= [1,1]: address=0x2f
+    # asw=  [0,0]: address=0x2c
+    # asw = [1,0]: address=0x2d
+    # asw = [0,1]: address=0x2e
+    # asw = [1,1]: address=0x2f
     # Thereafter use the standard PiicoDev library API calls...
+    
+    # APIs:
+
+    rfid.tagPresent():    # if an RFID tag is present
+
+    id = rfid.readID(detail=True)     # get the detailed tag information
+    # The parameter detail is False by default and True if selected
+    # if detail is False then only the tag's identification number is returned formatted as a hex string
+    # if detail is True then the tag type, success flag, and id numbers (formatted and unformatted) are returned in a structured array
+
+    # Read and write numbers, only applicable to Classic tags
+    number = rfid.readNumber(slot) # Read an integer number from a tag memory slot. Slot is an integer fro 0 to 35 inclusive (36 slots available to use)
+    rfid.writeNumber(number_to_write, slot) # Write a number to a tag memory slot
+
+    # Read and write text. Applicable to all tag types.
+    text = rfid.readText() # Reads the data in the tag's memory as text. Note on Classic tags any number in slots will be interpreted as text.
+    rfid.writeText(text_to_write) # Writes a text string to the tag's memory
+
+    # Write a URI (Universal Resource Indicator) otherwise known as a web link to the tag e.g. 'https://auststem.com.au'. 
+    # This occupies the same memory as Classic tag slots and the tag's text memory.
+    # Once written, a URI is recognised by any web-capable smart device with an RFID reader (such as a smart phone) and it will open the link on the device.
+    rfid.writeURI(URI_to_write) # Write a URI to the tag's memory.
 
 ```
 
