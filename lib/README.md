@@ -85,6 +85,28 @@ The Kookaberry Reference Guide contains a section on the [Peripherals Module Lib
 The Kookaberry can use other sensors beyond those catered for in the Kookaberry firmware.  To use these other sensors, library modules are required containing the necessary driver software.
 
 Included here are library modules for the following supplementary sensors:
+- **aht21** - Temperature and Humidity Sensor
+  - A low cost temperature and humidity sensor with an I2C interface.
+  - Often found in combination with an ENS160 CO2 air quality sensor. In this configuration the heat from the ENS160 may be transferred to the AHT21 raising the apparent temperature by several degrees above ambient temperature.  This will need to be compensated for to obtain an accurate reading.
+
+```
+Usage:
+    import time
+    from machine import SoftI2C, Pin
+    import aht
+
+    i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B'))
+    sensor = AHT21(i2c)
+
+    while True:
+        humidity, temperature = sensor.read()
+        print("Humidity: {:.2f}".format(humidity))
+        print("Temperature: {:.2f}".format(temperature))
+        time.sleep(2)
+
+```
+
+
 - **hcsr04** (and **rcwl-1601**) - Ultrasonic distance sensor.
   - The sensor uses ultrasonic echolocation to detect objects within a range of 2 to 450 cm.
   - Note the HCSR04 is a 5 volt module and so not compatible with the Kookaberry which uses 3.3 volts.
@@ -153,10 +175,13 @@ Usage -
   - Redundant SMBbus code lines have been commented out and replaced by I2C code
 ```
 Usage:
-    from veml6070_i2c import Veml6070 # The veml6070 class
-    uv = Veml6070(i2c) # Create the Veml6070 object on the I2C bus - create the i2c object using **machine.SoftI2C**
+    from machine import Pin, SoftI2C
+    i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B')) # Create I2C bus object
 
-    # Periodicall read the UV sensor
+    from veml6070_i2c import Veml6070 # The veml6070 class
+    uv = Veml6070(i2c) # Create the Veml6070 object on the I2C bus
+
+    # Periodically read the UV sensor
     uv_light = uv.get_uva_light_intensity() / 10 # Scale from W/sqm to mw/sqcm
     uv_index = int(uv_light / 2.5) # Calculate the UV index
     # Use with care
