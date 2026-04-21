@@ -143,6 +143,30 @@ Usage:
     print('P: %d usec' % pulse, 0, 40)
 ```
 
+- **pn532** - RFID reader
+  - Library module to use a PN532-based NFC/RFID Reader/Writer as a drop-in replacement for the PiicoDev RFID Reader/Writer (MFRC522-based).
+  - The PN532 communicates via I2C using its normal information frame protocol.
+  - This module provides the same public API as PiicoDev_RFID_Kookaberry.py so that existing application scripts require minimal changes.
+
+```
+Usage:
+    # Example of basic tag read
+    # from pn532 import PN532
+    from machine import Pin, SoftI2C
+    from time import sleep_ms
+    i2c = SoftI2C(sda=Pin("P3B"), scl=Pin("P3A"))
+    rfid = PN532(i2c, debug=False)   # Initialise the RFID module
+
+    print('Place tag near the NFC reader')
+    print('')
+    while True:
+        if rfid.tagPresent():        # if an RFID tag is present
+            id = rfid.readId()       # get the id
+            print(id)                # print the id
+        sleep_ms(100)
+
+```
+
 - **pt100** - Module to measure temperature using a PT100 resistance temperature detector (RTD) probe # which is interfaced via a wheatstone bridge and analogue amplifier module.
   - The sensor is a DFRobot SEN0198 High Temperature Sensor
   - The equation given by DFRobot to convert the module analogue voltage to sensor resistance is ```res =  (1800 * voltage + 220.9 * 18) / (2.209 * 18 - voltage)``` 
