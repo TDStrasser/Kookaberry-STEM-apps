@@ -86,7 +86,7 @@ The Kookaberry can use other sensors beyond those catered for in the Kookaberry 
 
 Included here are library modules for the following supplementary sensors:
 - **aht21** - Temperature and Humidity Sensor
-  - A low cost temperature and humidity sensor with an I2C interface.
+  - A driver for the AHT21 low cost temperature and humidity sensor with an I2C interface.
   - Often found in combination with an ENS160 CO2 air quality sensor. In this configuration the heat from the ENS160 may be transferred to the AHT21 raising the apparent temperature by several degrees above ambient temperature.  This will need to be compensated for to obtain an accurate reading.
 
 ```
@@ -106,7 +106,7 @@ Usage:
 
 ```
 - **ens160** - Multi-gas Sensor
-  -  Digital Metal-Oxide Multi-Gas Sensor providing multiple outputs e.g. eCO21, TVOC and AQIs in compliance with worldwide IAQ3 signal standards.
+  -  Driver for the ENS160 Digital Metal-Oxide Multi-Gas Sensor providing multiple outputs e.g. eCO21, TVOC and AQIs in compliance with worldwide IAQ3 signal standards.
   -  Interfaces via an I2C bus 
   -  Often found in combination with an AHT21 temperature and humidity sensor that can be used to calibrate the ENS160 to the ambient conditions.
 
@@ -207,5 +207,26 @@ Usage:
     uv_index = int(uv_light / 2.5) # Calculate the UV index
     # Use with care
     uv_risk = uv.get_estimated_risk_level(uv_light)    # not consistent with Australian BOM risk which is 1 point per 25mW/sqm
+
+```
+
+- **vl53l0x** - Laser Distance Sensor
+  - Driver for the VL53L0X is a Time-of-Flight (ToF) laser-ranging module providing accurate distance measurement. It can measure absolute distances up to 2 metres.
+
+```
+Usage:
+    # Initialize I2C bus and sensor.
+    from machine import Pin, SoftI2C
+    i2c = SoftI2C(sda = Pin("P3B"), scl=Pin("P3A"))
+
+    from time import sleep_ms
+
+    from vl53lox import VL53LOX
+    vl53 = VL53L0X(i2c) # Create the distance sensor object
+    vl53.start_continuous() # Optionally start continuous measurement mode.
+
+    while True:
+        print("Range: {0}mm".format(vl53.range))
+        time.sleep(0.5)
 
 ```
