@@ -81,6 +81,7 @@ They all share these characteristics:
 
 # General Environmental Sensing Apps
 These apps include:
+- **aht21-ens160-test** - a test script demonstrating the use of an AHT21-ENS160 combination air quality sensor.
 - **Altimeter** - Calculates altitude from barometric pressure using a BMP280 or BME280  sensor connected to plug **P3**.
   - Local reference sea-level barometric pressure (known as QNH) can be adjusted using the C and D buttons. The default QNH is 1013hPa
   - A set altitude mode (pilot mode) is provided - toggle modes with the B button
