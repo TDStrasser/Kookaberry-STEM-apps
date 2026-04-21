@@ -211,7 +211,7 @@ Usage:
 ```
 
 - **vl53l0x** - Laser Distance Sensor
-  - Driver for the VL53L0X is a Time-of-Flight (ToF) laser-ranging module providing accurate distance measurement. It can measure absolute distances up to 2 metres.
+  - Driver for the VL53L0X Time-of-Flight (ToF) laser-ranging module providing accurate distance measurement. It can measure absolute distances up to 2 metres.
 
 ```
 Usage:
