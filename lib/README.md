@@ -105,7 +105,28 @@ Usage:
         time.sleep(2)
 
 ```
+- **ens160** - Multi-gas Sensor
+  -  Digital Metal-Oxide Multi-Gas Sensor providing multiple outputs e.g. eCO21, TVOC and AQIs in compliance with worldwide IAQ3 signal standards.
+  -  Interfaces via an I2C bus 
+  -  Often found in combination with an AHT21 temperature and humidity sensor that can be used to calibrate the ENS160 to the ambient conditions.
 
+```
+Usage:
+    from machine import SoftI2C, Pin
+    i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B')) # Create an I2C bus object
+    sensor = ENS160(bus=i2c, address=0x53)
+
+    while True:
+        print("ENS160 Data")
+        print("AQI:%d %s" % (sensor.aqi.value, sensor.aqi.rating) )
+        print("CO2:%dppm %s" % (sensor.eco2.value, sensor.eco2.rating) )
+        print("TVOC:%dppb" % sensor.tvoc)
+        print("Temp:%2.fC" % sensor.temperature)
+        print("RH:%d%%" % sensor.humidity)
+        print("Status:%s %s" % (sensor.status_validity_flag, sensor.operation) )
+        sleep_ms(5000)
+
+```
 
 - **hcsr04** (and **rcwl-1601**) - Ultrasonic distance sensor.
   - The sensor uses ultrasonic echolocation to detect objects within a range of 2 to 450 cm.
