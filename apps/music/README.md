@@ -5,7 +5,7 @@ This is a repository of pre-coded music-related apps for use with the Kookaberry
   - Port **P2** is attached to a loudspeaker peripheral.  The metronome beat is a PWM signal.
   - See the description at https://learn.auststem.com.au/app/metronome/
 - **MoveMusic** - Plays musical notes using gestures tracked by the Kookaberry's in-built accelerometer:
-  - This app only works with the STM Kookaberry as the RP2040 does not have analogue outputs.
+  - This app only works with the STM Kookaberry as the Pico microprocessors do not have analogue outputs.
   - Plug **P4** is connected to a loudspeaker peripheral.
   - Plug **P5** is connected to an external button peripheral to play notes (optional).
   - See the description at https://learn.auststem.com.au/app/move-music-app/

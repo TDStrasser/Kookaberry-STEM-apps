@@ -9,7 +9,7 @@ See the description of the [Kookaberry STELR Extension Kit](https://learn.austst
 The STELR apps are compatible with the Serial Studio serial line data visualisation program. See [Visualise STELR Data with Serial Studio](https://learn.auststem.com.au/visualise-stelr-data-with-serial-studio/)
 
 In this repository:
-- **STELR Kookaberry Package** - This is a zip file containing all of the software required to use the Extension Kit.  Please note it is only compatible with the V1-x STM Kookaberry (not the V2-x RP2040 Kookaberry).  To install the software:
+- **STELR Kookaberry Package** - This is a zip file containing all of the software required to use the Extension Kit.  Please note it is only compatible with the V1-x STM Kookaberry (not the V2-x Pico Kookaberry).  To install the software:
   1. Download the zip file to your desktop PC.
   2. Tether a STM Kookaberry to the USB port on the PC so that it mounts as a USB drive.
   3. Open the zip file with a ZIP extractor program (Windows Explorer can do this).

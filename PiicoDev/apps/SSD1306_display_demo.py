@@ -4,7 +4,7 @@
 # DATE-CREATED: 19 August 2025
 # DATE-MODIFIED: 
 # VERSION: 1.0
-# SCRIPT: MicroPython Version: 1.19 for the Raspberry Pi Pico with RP2040
+# SCRIPT: MicroPython Version: 1.19 for the Raspberry Pi Pico RP2040 / RP2350
 # LICENCE: This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation.
