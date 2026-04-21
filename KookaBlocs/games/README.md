@@ -1,5 +1,5 @@
-# KookaBlockly Games Apps
-These pre-coded apps illustrate how easily **KookaBlockly** can be used to write simple games for the **Kookaberry**:
+# KookaBlocs Games Apps
+These pre-coded apps illustrate how easily **KookaBlocs** can be used to write simple games for the **Kookaberry**:
 - **KookaFace** - A demonstration of an animated face on the Kookaberry display.  
   - Not really a game, more of an amusement
   - It uses two functions - one to draw an eye, another the mouth.
@@ -8,7 +8,7 @@ These pre-coded apps illustrate how easily **KookaBlockly** can be used to write
   - Button C closes and widens the mouth.
   - Button D opens and narrows the mouth.
   - Click button A to exit.
-  - Download and modify the script using KookaBlockly to change the face's behaviour and/or appearance.
+  - Download and modify the script using KookaBlocs to change the face's behaviour and/or appearance.
 - **Sprites** - Steer your vertically descending sprite to avoid or collide with a sprite running left to right.  Displays the collision count
   - Use the C and D buttons to to steer your sprite.
   - Click the A button to exit

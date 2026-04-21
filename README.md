@@ -6,13 +6,15 @@ The repository is organised as follows:
   - **code** - contains the source code of the library modules
   - **mpy RP2040** - MicroPython bytecode for the RP2040 Kookaberry
   - **mpy STM** - MicroPython bytecode modules for the STM Kookaberry
-- **KookaBlockly** - contains scripts using the **KookaBlockly** visual scripting language for the Kookaberry.  These scripts are organised into folders of common interest.
+- **KookaBlocs** - contains scripts using the **KookaBlocs** visual scripting language for the Kookaberry.  These scripts are organised into folders of common interest.
 - **PiicoDev** - contains scripts and library modules for the PiicoDev modules marketed by Core Electronics.
 
 ## Kookaberry Documentation
 The following documentation is available online:
 - [Kookaberry Reference Guide](https://kookaberry-reference-guide.readthedocs.io/en/latest/index.html) - a guide to the hardware and the software in the Kookaberry. 
-- [KookaBlockly Reference Guide](https://kookablockly-reference-guide.readthedocs.io/en/latest/) - a guide to the KookaBlockly visual programming language.
+- [KookaBlocs Reference Guide](https://kookablocs-reference-guide.readthedocs.io/en/latest/index.html) - a guide to programming the Kookaberry using the KookaBlocs visual programming language.
+- [KookaCode Reference Guide](https://kookacode-reference-guide.readthedocs.io/en/latest/index.html) - a guide to the development tool for Kookaberry MicroPython scripts. It is a portable web application that supports loading, editing, saving, running and debugging MicroPython scripts on a USB-tethered Kookaberry.
+- [KookaBlockly Reference Guide](https://kookablockly-reference-guide.readthedocs.io/en/latest/) - a guide to the KookaBlocs visual programming language. Note: The KookaBlockly programming tool is a desktop app for which development has ceased. It has been superceded by the **KookaBlocs** web app described above.
 - [AusSTEM Learning Hub](https://learn.auststem.com.au) - a repository of educational resources including lesson plans, descriptions of apps, and descriptions of the Kookaberry and compatible peripherals.
 
 
