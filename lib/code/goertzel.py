@@ -1,3 +1,5 @@
+# Origin and acknowledgement: https://gist.github.com/sebpiq/4128537
+
 import math
 
 def goertzel(samples, sample_rate, *freqs):
