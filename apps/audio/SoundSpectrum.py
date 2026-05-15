@@ -3,8 +3,8 @@ __name__ = 'SoundSpectrum'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 9 May 2020
-# Date last modified: 11 June 2020
-# MicroPython Version: 1.12 for the Kookaberry V4-05
+# Date last modified: 15 May 2020 # Corrected bug in extracting power values
+# MicroPython Version: 1.27 for the Kookaberry Pico
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation.
@@ -15,7 +15,7 @@ __name__ = 'SoundSpectrum'
 # or that defects in the software will be corrected,  
 # See the GNU General Public License for more details.
 #
-# Measures the speech audio spectrum using an analogue microphone plugged into P5
+# Measures the speech audio spectrum using an analogue microphone plugged into P1
 # It continuously samples and accumulates the power spectrum whenever sufficient audio signal is detected
 # It finishes sampling when the A button is pressed and finalises the spectrum
 # It logs the spectrum into SoundSpectrum.csv when complete
@@ -35,7 +35,7 @@ import goertzel    # simplified spectrum analysis
 # Main code starts here
 
 # set up for collecting samples
-audio_pin = 'P5'
+audio_pin = 'P1'
 freq_min = 40    # starting frequency
 freq_max = 4000    # ending frequency
 freq_res = 40    # spectrum resolution
@@ -78,7 +78,7 @@ while not kooka.button_a.was_pressed() and not time.ticks_diff(time.ticks_ms(), 
         disp.text('Sample', 80,16)
         freqs, powers = goertzel.goertzel(sample_buf, sample_rate, (freq_min, freq_max))
         for i in range(0, len(powers)):    # totalise the power spectrum
-            spectrum[i] = powers[i]
+            spectrum[i] = powers[i][2]   # extract only the power values
         _timer_silence = time.ticks_ms()  # reset the silence waiting period
     else: # No sound detected
         disp.text('W %d/%d' % (time.ticks_diff(time.ticks_ms(), _timer_silence)/1000,silence_timeout/1000), 80,16)
