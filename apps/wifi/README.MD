@@ -1,5 +1,7 @@
 # Kookaberry WiFi Apps
-This is a repository of pre-coded WiFi apps for use with the Kookaberry RP2040W and RP2350W micro-computers:
+This is a repository of pre-coded WiFi apps for use with the Kookaberry RP2040W and RP2350W micro-computers.
+
+Documentation for WiFi using MicroPython can be found here: https://docs.micropython.org/en/latest/esp8266/tutorial/network_basics.html (Kookaberry specific documentation is pending)
 
 - **Web_BME280** - A web-server script that displays temperature, humidity and air-pressure readings obtained from a BME280 sensor.  See the Web_BME280_explainer.md file for a detailed explanation:
 
