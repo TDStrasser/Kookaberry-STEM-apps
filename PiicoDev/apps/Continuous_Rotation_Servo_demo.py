@@ -12,7 +12,7 @@ servo_2 = PiicoDev_Servo(controller, 2, midpoint_us=1500, range_us=800) # Connec
 #  1500usec is the zero speed point.
 
 # Speeds in this script are in the range -100 to +100
-current_speed = 0 #
+current_speed = 0 # Memeory of the last set speed
 
 def ramp(servo,s1,s2):
   if s2 == s1: return # Skip zero changes
@@ -22,12 +22,12 @@ def ramp(servo,s1,s2):
     sleep_ms(20)
 
 speeds = [0,-100,100,0,-50,50,0,-25,25,0] # Put the speeds you want in this array (-100 to +100)
-# Step the servos
+# Step the servo through the array
 for speed in speeds:
   if speed < -100: speed = -100 # limit out of range
   if speed > 100: speed = 100
   ramp(servo_2,current_speed, speed)
   current_speed = speed # Record the last target speed
-  sleep_ms(1000) # Stay at the sppeed for a while
+  sleep_ms(1000) # Stay at the speed for a while
 
 servo_2.release() # Stop the servo driver PWM so it doesnt creep
