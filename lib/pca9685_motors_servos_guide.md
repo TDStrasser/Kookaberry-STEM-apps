@@ -4,6 +4,27 @@
 
 This guide explains **why** the `PCA9685`, `Servo`, `Motor`, and `Stepper` classes in `pca9685.py` work the way they do, so that you can use them confidently — and eventually write similar drivers yourself. It assumes no prior embedded electronics knowledge beyond basic MicroPython (variables, classes, loops).
 
+*This revision covers the updated driver (9 July 2026 build) which corrects earlier issues and adds an oscillator frequency compensator and direction/midpoint options for angular servos.*
+
+---
+
+## 0. What changed since the previous driver revision
+
+The previous version of this driver had three implementation issues, all now corrected:
+
+| Issue | Where | Fix |
+|---|---|---|
+| `NameError` risk constructing a `Servo` | `Servo.__init__` referenced an undefined `freq` before it was assigned | `self.freq = controller.frequency` is now set *before* `self.period` is calculated from it |
+| `Motor.release()` never released the reverse channel | `release()` zeroed `channel_fwd` twice instead of also zeroing `channel_rev` | `release()` now correctly zeroes both `channel_fwd` and `channel_rev` |
+| Negative angles could round to one step short | `Stepper.angle()` used `int(x + 0.5)`, which truncates negative results toward zero rather than rounding away from it | Now uses `int(degrees / self.step_angle + copysign(0.5, degrees))`, which rounds correctly for both positive and negative angles |
+
+Two new capabilities have also been added, both explained in detail in Section 3 below:
+
+- **PCA9685 oscillator frequency compensation** (`freq_compensation` on `Servo`) — corrects servo pulse-width calculations for the real-world inaccuracy of the PCA9685's internal 25 MHz oscillator.
+- **Direction and midpoint options** (`clockwise`, `mid_zero` on `Servo`) — let you adapt the meaning of `servo.angle` to match how a servo is physically mounted and which zero-angle convention you want to use.
+
+The `Servo` class's default pulse-width range has also been narrowed from 600–2400 µs to a more conservative **1000–2000 µs**, and the module-level `calculate_pulse()` helper is now a method on `Stepper` (`self.calculate_pulse(...)`) rather than a free function — a minor internal reorganisation with no effect on how you call `Stepper.step()` or `Stepper.angle()`.
+
 ---
 
 ## 1. The big idea: one chip, sixteen PWM channels, one I2C bus
@@ -42,17 +63,21 @@ def duty(self, index, value=None, invert=False):
 
 `value` is a number from 0 (always off) to 4095 (always on) — this is the fundamental building block every other class in the file is built on.
 
-### Setting the frequency
+### Setting the frequency, and why the internal oscillator isn't perfectly accurate
 
 All 16 channels share **one** PWM frequency — you cannot run some channels at 50 Hz and others at 1 kHz simultaneously ([NXP PCA9685 datasheet](https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)). This matters because servos expect roughly 50 Hz, while some other PWM applications (e.g. dimming an LED) work fine at much higher frequencies — but on this board, everything you connect must tolerate the frequency you chose in `PCA9685(i2c, freq=50)`.
 
-The chip has an internal ~25 MHz oscillator. To get an arbitrary output frequency, the driver calculates a **prescale** value and writes it to a register:
+The chip has an internal oscillator that NXP specifies as "25 MHz typical" ([NXP PCA9685 datasheet](https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf)) — the word *typical* is important, because this is a built-in RC-type oscillator, not a precision crystal, and real chips commonly run a few percent away from exactly 25 MHz. Hobbyist measurements have found individual PCA9685 chips running anywhere from about 23–27 MHz ([va3wam calibrateServoMotor notes](https://github.com/va3wam/calibrateServoMotor)), and Adafruit has similarly observed boards running as high as 27 MHz against the nominal 25 MHz ([Adafruit oscillator frequency discussion](https://groups.io/g/arduini/topic/oscillator_frequency/81444150)). For LED dimming this tiny frequency error is irrelevant, but because servo position is decoded from *absolute pulse duration in microseconds*, a real oscillator running a few percent fast or slow will make every commanded pulse a few percent shorter or longer than intended — a small but real source of servo positioning error. Section 3 explains the `freq_compensation` feature this driver provides to correct for it.
+
+To get an arbitrary output frequency from that oscillator, the driver calculates a **prescale** value and writes it to a register. The corrected formula, matching the NXP datasheet exactly, is:
 
 ```python
-prescale = int(25000000.0 / 4096.0 / f + 0.5)
+prescale = int(25000000.0 / 4096.0 / f + 0.5) - 1
+...
+self._frequency = 25e6 / ((prescale+1)*4096)
 ```
 
-This is a standard technique: a fast internal clock is divided down by an integer prescaler to produce the frequency you actually want. You don't need to memorise the formula, but understanding *that* dividing a fixed oscillator produces your target frequency is a transferable embedded-systems concept.
+The `- 1` (and matching `+1` when reading the frequency back) reflects how the PCA9685's PRE_SCALE register is defined: the chip internally uses `(PRE_SCALE + 1)` as the actual divider, so the register value you write must be one less than the divisor you actually want. This is a standard technique — a fast internal clock is divided down by an integer prescaler to produce the frequency you actually want — and a good reminder that when translating a datasheet formula into code, off-by-one errors in register definitions are a common and easy mistake to make (the earlier driver revision had exactly this off-by-one, since fixed).
 
 ### The `PCA9685.__init__` and I2C addressing
 
@@ -67,13 +92,13 @@ The PCA9685 defaults to I2C address `0x40` ([Adafruit PCA9685 guide](https://lea
 ```python
 from machine import SoftI2C, Pin
 i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B'))
-controller = PCA9685(i2c, address=0x40)   # one controller per board
-servo = Servo(controller, 1)              # channel 1
-motor = Motor(controller, 1)              # motor output 1
-stepper = Stepper(controller, 1)          # stepper output 1
+controller = PCA9685(i2c, address=0x40, freq=50)   # one controller per board
+servo = Servo(controller, 1)                        # channel 1
+motor = Motor(controller, 1)                         # motor output 1
+stepper = Stepper(controller, 1)                     # stepper output 1
 ```
 
-Every `Servo`, `Motor`, and `Stepper` object *wraps* the shared `controller` and simply calls `controller.duty(channel, value)` behind the scenes. This is a good example of **object-oriented hardware abstraction**: the low-level chip details (registers, I2C addresses, prescalers) are hidden inside `PCA9685`, so the classes built on top of it can expose a much simpler interface (`.angle`, `.speed`, `.step()`).
+Every `Servo`, `Motor`, and `Stepper` object *wraps* the shared `controller` and simply calls `controller.duty(channel, value)` behind the scenes. This is a good example of **object-oriented hardware abstraction**: the low-level chip details (registers, I2C addresses, prescalers, oscillator quirks) are hidden inside `PCA9685`, so the classes built on top of it can expose a much simpler interface (`.angle`, `.speed`, `.step()`).
 
 ---
 
@@ -85,7 +110,7 @@ A hobby servo is a small package containing a DC motor, a gear train, and — cr
 
 ### Why pulse *width*, not duty cycle percentage, is what matters
 
-This is the single most important concept for angular servos: **the servo cares about the absolute time (in microseconds) that the pulse stays high, not the percentage of the cycle it occupies.** A pulse of about 1000 µs commands one extreme of travel, about 1500 µs commands the centre, and about 2000 µs commands the other extreme — repeated roughly every 20 ms (50 Hz) ([Adafruit CircuitPython servo guide](https://cdn-learn.adafruit.com/downloads/pdf/using-servos-with-circuitpython.pdf), [Parallax continuous-rotation servo guide](https://learn.parallax.com/kickstarts/parallax-continuous-rotation-servo/)). The driver defaults to a slightly wider `min_us=600, max_us=2400` because many modern servos can safely use more of their mechanical travel — but the underlying principle is identical.
+This is the single most important concept for angular servos: **the servo cares about the absolute time (in microseconds) that the pulse stays high, not the percentage of the cycle it occupies.** A pulse of about 1000 µs commands one extreme of travel, about 1500 µs commands the centre, and about 2000 µs commands the other extreme — repeated roughly every 20 ms (50 Hz) ([Adafruit CircuitPython servo guide](https://cdn-learn.adafruit.com/downloads/pdf/using-servos-with-circuitpython.pdf), [Parallax continuous-rotation servo guide](https://learn.parallax.com/kickstarts/parallax-continuous-rotation-servo/)). The driver now defaults to exactly this conventional `min_us=1000, max_us=2000` range, which is a safer starting point for unknown servos than a wider range — you can always widen it deliberately once you've confirmed your specific servo tolerates more travel.
 
 ### Converting microseconds to a PCA9685 duty count
 
@@ -96,40 +121,38 @@ def _us2duty(self, value):
     return int(4095 * value / self.period + 0.5)
 ```
 
-At 50 Hz, `self.period` is 20,000 µs, so:
+At 50 Hz, `self.period` is (ideally) 20,000 µs, so:
 
 | Pulse width | Approx. duty count (0–4095) |
 |---|---:|
-| 600 µs | ~123 |
 | 1000 µs | ~205 |
 | 1500 µs | ~307 |
 | 2000 µs | ~410 |
-| 2400 µs | ~491 |
 
-You never need to do this arithmetic yourself — it happens inside `Servo.__init__` and `_us2duty()` — but understanding it explains *why* the class asks for `min_us`/`max_us` rather than raw duty numbers.
+You never need to do this arithmetic yourself — it happens inside `Servo.__init__` and `_us2duty()` — but understanding it explains *why* the class asks for `min_us`/`max_us` rather than raw duty numbers, and why an inaccurate `self.period` (Section 3) would throw every one of these conversions off by the same percentage.
 
 ### Using the `angle` property
 
 ```python
-servo = Servo(controller, 1, min_us=600, max_us=2400, degrees=180)
+servo = Servo(controller, 1, min_us=1000, max_us=2000, degrees=180)
 servo.angle = 90      # move to the centre of travel
 ```
 
-The setter linearly maps your requested angle (0 to `degrees`) onto the calibrated duty range and writes it straight to the PCA9685 channel:
+The setter linearly maps your requested angle onto the calibrated duty range and writes it straight to the PCA9685 channel:
 
 ```python
 duty = self.min_duty + (self.max_duty - self.min_duty) * x / self._degrees
 ```
 
-This is a **linear remap** — the same pattern used throughout the file's helper `remap()` function. Learning to read this one line means you can read almost every other property setter in the module.
+This is a **linear remap** — the same pattern used throughout the file's helper `remap()` function. Learning to read this one line means you can read almost every other property setter in the module. (Section 3 explains the direction/midpoint transform that now happens to `x` immediately before this line.)
 
 ### Calibration: `midpoint_us` + `range_us` as an alternative
 
 ```python
-servo = Servo(controller, 8, midpoint_us=1600, range_us=2600, degrees=180)
+servo = Servo(controller, 8, midpoint_us=1500, range_us=2400, degrees=180)
 ```
 
-Not every servo's centre is exactly 1500 µs, and not every servo accepts exactly 500–2500 µs. Real servos vary by manufacturer, and pushing a pulse beyond a servo's mechanical limit causes it to buzz, draw excess current, heat up, and can strip its gears ([Adafruit motor selection guide](https://learn.adafruit.com/adafruit-motor-selection-guide/rc-servos)). Calibration means experimentally finding the safe `min_us`/`max_us` (or `midpoint_us`/`range_us`) for *your* specific servo before trusting it with a full 0–180° sweep. Always start a new servo cautiously — command small angle changes first and watch/listen for strain.
+Not every servo's centre is exactly 1500 µs, and not every servo accepts exactly 1000–2000 µs. Real servos vary by manufacturer, and pushing a pulse beyond a servo's mechanical limit causes it to buzz, draw excess current, heat up, and can strip its gears ([Adafruit motor selection guide](https://learn.adafruit.com/adafruit-motor-selection-guide/rc-servos)). Calibration means experimentally finding the safe `min_us`/`max_us` (or `midpoint_us`/`range_us`) for *your* specific servo before trusting it with a full sweep. Always start a new servo cautiously — command small angle changes first and watch/listen for strain.
 
 ### Power supply — why it matters here
 
@@ -145,7 +168,79 @@ With no pulse present, most analog servos stop actively holding their position (
 
 ---
 
-## 3. Continuous-rotation servos
+## 3. New in this revision: compensating for oscillator drift, direction, and midpoint
+
+### `freq_compensation` — correcting for the real oscillator, not the ideal one
+
+```python
+def __init__(self, controller, channel, min_us=1000, max_us=2000, degrees=180,
+             midpoint_us=None, range_us=None, freq_compensation=0,
+             clockwise=True, mid_zero=True):
+    if freq_compensation < -15: freq_compensation = -15
+    if freq_compensation > 15: freq_compensation = 15
+    self.freq_compensation = 1 + freq_compensation/100
+    self.freq = controller.frequency
+    self.period = 1_000_000/(self.freq * self.freq_compensation)  # microseconds
+```
+
+Recall from Section 1 that `controller.frequency` is always calculated assuming the internal oscillator runs at *exactly* 25 MHz — the PCA9685 has no way to measure its own true oscillator speed, so both the frequency you request and the frequency it reports back rely on that same nominal assumption ([NXP PCA9685 datasheet](https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf)). If the chip's real oscillator actually runs faster or slower than 25 MHz, the *true* physical PWM period will be correspondingly shorter or longer than the "nominal" period implied by `controller.frequency` — even though the chip still believes it is producing, say, exactly 50 Hz.
+
+`freq_compensation` is a percentage (clamped to ±15%) that you supply once you know how far off your specific board's oscillator actually is — for example, by measuring the real PWM period on an oscilloscope, or by observing at what commanded pulse width a servo actually reaches a known physical position ([va3wam calibrateServoMotor notes](https://github.com/va3wam/calibrateServoMotor); [kpower.com PCA9685 troubleshooting notes](https://www.kpower.com/insight_servo/7483.html)). A positive value tells the class "this chip's oscillator — and therefore its real output frequency — runs this many percent *faster* than nominal," which shortens the `self.period` used for every microsecond-to-duty conversion, keeping commanded pulse widths accurate to the *real* hardware timing rather than the theoretical 25 MHz assumption:
+
+```python
+self.period = 1_000_000/(self.freq * self.freq_compensation)
+```
+
+This correction only affects how the `Servo` object converts your requested microseconds into a duty count — it does not change any register on the PCA9685 chip itself. It is a purely software-side calibration, per servo object, and (because it only takes a single percentage) is deliberately simple compared to the alternative of measuring and hard-coding an actual oscillator frequency in Hz, as some other PCA9685 libraries do (e.g. Adafruit's `setOscillatorFrequency()`) ([arduini group oscillator frequency discussion](https://groups.io/g/arduini/topic/oscillator_frequency/81444150)).
+
+**How would a student determine the right value?** Command a known pulse width (e.g. the servo's expected 1500 µs centre) and observe whether the servo actually sits at centre. If it consistently sits slightly off-centre in a repeatable direction, or if a full sweep consistently over/under-shoots a known mechanical limit, that's a sign the real oscillator differs from 25 MHz and a small `freq_compensation` value can be tuned in to correct it. Leaving it at the default `0` is perfectly fine for most classroom purposes — the error is normally only a few percent and most servos have enough mechanical deadband to absorb it without students ever noticing.
+
+### `clockwise` and `mid_zero` — adapting to how the servo is mounted, and what "zero" should mean
+
+These two new boolean flags change how the `angle` property interprets the number you assign to it, *before* it gets remapped to a duty cycle:
+
+```python
+@angle.setter
+def angle(self, x):
+    if self.clockwise == True: x = self._degrees - x        # Transform the direction of rotation
+    if self.mid_zero == True:                                # Compensate for zero midpoint
+        if self.clockwise == True: x = x - 90
+        else: x = x + 90
+    duty = self.min_duty + (self.max_duty - self.min_duty) * x / self._degrees
+    ...
+```
+
+Think of these as two independent, stackable adjustments:
+
+- **`clockwise`** answers "does increasing the angle I command make the servo rotate the way I expect, or the opposite way?" Two servos mounted as mirror images of each other (e.g. on the left and right side of a robot chassis) will rotate in visually *opposite* directions for the same pulse width, unless one of them has `clockwise` set the other way. When `clockwise=True`, the class internally reverses the mapping (`x = self._degrees - x`) so that increasing your commanded angle rotates the shaft in the "clockwise" sense as you've physically mounted it; `clockwise=False` uses the raw, un-reversed mapping.
+- **`mid_zero`** answers "should an angle of 0 mean *one mechanical extreme* of the servo's travel, or the *centre* of its travel?" With `mid_zero=False`, angle 0 is one end of travel and angle `degrees` (typically 180) is the other end — the same convention used by the earlier driver revision. With `mid_zero=True` (the new default), angle 0 is redefined to sit at the servo's centre, so a typical 180° servo now naturally accepts roughly **-90 to +90** as its usable angle range — a much more intuitive convention if you're describing, say, a sensor mount pointing "0° = straight ahead, negative = left, positive = right."
+
+Because these two flags combine, it helps to see the effect on a 180° servo (`degrees=180`) worked through directly:
+
+| `clockwise` | `mid_zero` | Commanded angle 0 means... | Increasing angle rotates... |
+|---|---|---|---|
+| `False` | `False` | one mechanical extreme (`min_duty`) | toward the other extreme (`max_duty`) — same behaviour as the previous driver revision |
+| `True` | `False` | the *other* mechanical extreme (`max_duty`) | toward the first extreme (`min_duty`) — direction reversed |
+| `False` | `True` | the servo's centre | toward the `max_duty` extreme as angle increases past 0 |
+| `True` | `True` (new default) | the servo's centre | toward the `min_duty` extreme as angle increases past 0 |
+
+This matches the module's own test example, which calibrates a servo with the new defaults and then commands it through `0`, `-45`, and `-90`:
+
+```python
+servo = Servo(controller, 8, midpoint_us=1500, range_us=2400, degrees=180,
+              freq_compensation=12, clockwise=True, mid_zero=True)
+servo.angle = 0     # centre of travel
+servo.angle = -45   # 45° toward one extreme
+servo.angle = -90   # that extreme
+```
+
+**A caveat worth knowing:** `mid_zero`'s offset is hard-coded to exactly 90 (`x - 90` / `x + 90`), which assumes a servo with `degrees=180` (so that 90 really is the half-way point). If you ever construct a `Servo` with a different `degrees` value and also set `mid_zero=True`, the "centre" it computes will not actually be at the geometric midpoint of your travel range — worth testing explicitly if you use a non-180° servo with `mid_zero` enabled.
+
+**Another subtlety worth knowing:** the `angle` property's getter returns `self._angle`, which is saved *after* the `clockwise`/`mid_zero` transform has already been applied — so with the new defaults, reading back `servo.angle` immediately after `servo.angle = -45` will not necessarily show you `-45` again. If your program needs to remember the angle it last commanded, it's safer to keep track of that value yourself in a variable rather than relying on reading the property back.
+
+---
+
+## 4. Continuous-rotation servos
 
 ### What's actually different inside the servo
 
@@ -164,10 +259,10 @@ Parallax's own continuous servo documents 1300 µs as full-speed clockwise, 1500
 ### Using the `speed` property
 
 ```python
-drive = Servo(controller, 2, min_us=1000, max_us=2000)   # calibrate to your servo's neutral!
-drive.speed = 0.0     # stop (as close to neutral pulse as your calibration allows)
-drive.speed = 1.0     # full speed one direction
-drive.speed = -1.0    # full speed the other direction
+speed = Servo(controller, 2, min_us=1000, max_us=2000)   # calibrate to your servo's neutral!
+speed.speed = 0.0     # stop (as close to neutral pulse as your calibration allows)
+speed.speed = 1.0     # full speed one direction
+speed.speed = -1.0    # full speed the other direction
 ```
 
 ```python
@@ -178,7 +273,7 @@ def speed(self,x):
     self.controller.duty(self.channel, duty)
 ```
 
-This reuses the exact same `min_duty`/`max_duty` calibration machinery as the angular servo — the class doesn't need a separate "continuous servo" class because the *only* thing that differs is how you interpret the number you pass in. This is a nice lesson in software design: one well-parameterised class can serve two different physical behaviours.
+This reuses the exact same `min_duty`/`max_duty` calibration machinery as the angular servo (including the `freq_compensation` correction from Section 3) — note that `speed`, unlike `angle`, does **not** apply the `clockwise`/`mid_zero` transform, so those two flags only affect positional use of the class. This is a nice lesson in software design: one well-parameterised class can serve two different physical behaviours, but not every property needs to inherit every option.
 
 **Practical trimming tip:** because the manufactured "neutral point" of a continuous servo is rarely exactly 1500 µs, students should expect to experimentally find the pulse width that actually gives zero rotation for their specific unit, then treat that as the servo's true centre when picking `min_us`/`max_us` (or use the physical trim screw many continuous servos have) ([Adafruit CircuitPython servo guide](https://cdn-learn.adafruit.com/downloads/pdf/using-servos-with-circuitpython.pdf)).
 
@@ -190,13 +285,13 @@ The same power-supply advice from Section 2 applies: use a separate, adequately 
 
 ---
 
-## 4. DC motors through an H-bridge (e.g. the DRV8833)
+## 5. DC motors through an H-bridge (e.g. the DRV8833)
 
 ### Why you need an H-bridge at all
 
 A plain brushed DC motor spins one way when current flows through it in one direction, and the opposite way when current is reversed. A microcontroller pin can only ever be high or low, single-direction — it cannot reverse current by itself, and it usually can't supply enough current to run a motor directly. An **H-bridge** is an arrangement of four electronic switches (in the DRV8833's case, MOSFETs) around the motor, shaped like the letter H, that lets you connect either side of the motor to either supply rail — reversing current direction on command ([SparkFun TB6612FNG hookup guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)).
 
-The DRV8833 packs **two** independent H-bridges into one chip, so it can drive two separate DC motors — or, as you'll see in Section 5, be repurposed to drive one bipolar stepper ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833)).
+The DRV8833 packs **two** independent H-bridges into one chip, so it can drive two separate DC motors — or, as you'll see in Section 6, be repurposed to drive one bipolar stepper ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833)).
 
 ### The IN1/IN2 truth table
 
@@ -219,7 +314,7 @@ Because the DRV8833 treats roughly 2.0 V and above as a logic "high" on its inpu
 
 ### How the driver implements PWM speed control
 
-The uploaded `Motor` class allocates **two PCA9685 channels per motor** — one that maps to the H-bridge's forward input, one to reverse:
+The `Motor` class allocates **two PCA9685 channels per motor** — one that maps to the H-bridge's forward input, one to reverse:
 
 ```python
 self.channel_fwd = 8 + (motor-1) * 2
@@ -249,6 +344,16 @@ motor.speed = -100    # full reverse
 motor.speed = 0       # release() — coast to a stop
 ```
 
+`release()` now correctly zeroes both direction channels:
+
+```python
+def release(self):
+    self.controller.duty(self.channel_fwd, 0)
+    self.controller.duty(self.channel_rev, 0)
+```
+
+so calling `motor.release()` (or setting `speed = 0`) reliably stops the motor regardless of which direction it was last driven in — this is a good habit to rely on whenever you want to guarantee a motor is fully stopped, for example at the start or end of a program.
+
 ### Ratings you must respect
 
 The DRV8833 accepts a motor supply from about 2.7 V to 10.8 V, and depending on package, is rated around 1.5 A RMS / 2 A peak per bridge (some carrier boards, e.g. Pololu's, spec closer to 1.2 A continuous per channel) ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833); [Pololu DRV8833 carrier guide](https://www.pololu.com/product-info-merged/2130)). Crucially, a motor's **stall current** (drawn when the shaft can't turn — e.g. jammed or under heavy load) is typically much higher than its free-running current, and this is what actually trips the DRV8833's overcurrent, thermal, or undervoltage protection ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833)). Choose motors and supplies that respect these limits — the built-in protection is a safety net, not a substitute for correct sizing.
@@ -259,7 +364,7 @@ Like servos, DC motors need a **separate, adequately rated motor supply** (VM) d
 
 ---
 
-## 5. Stepper motors
+## 6. Stepper motors
 
 ### Why steppers are different from both servos and plain DC motors
 
@@ -273,7 +378,7 @@ A bipolar stepper has two independent windings ("coils"), and current must be dr
 
 Full-step drive energises coils in a repeating four-phase sequence, and each transition to the next phase combination is what makes the rotor advance by one step ([Oriental Motor stepper basics](https://www.orientalmotor.com/stepper-motors/technology/stepper-motor-basics.html)). Half-stepping interleaves additional intermediate combinations for finer resolution, and microstepping goes further still, proportioning the current between adjacent phases to produce smoother, smaller effective steps — but microstepping requires actual analog current control in the driver, not just on/off switching ([Oriental Motor stepper basics](https://www.orientalmotor.com/stepper-motors/technology/stepper-motor-basics.html)).
 
-The uploaded `Stepper` class implements a straightforward **full-step-style** sequence using four PCA9685 channels (mapped to the two H-bridges' four logic inputs):
+The `Stepper` class implements a straightforward **full-step-style** sequence using four PCA9685 channels (mapped to the two H-bridges' four logic inputs):
 
 ```python
 self.coil_1_fwd = 8 + (stepper-1) * 4
@@ -305,25 +410,33 @@ elif steps < 0:
 ### Timing: how RPM becomes a delay
 
 ```python
-def calculate_pulse(rpm, steps_per_rev, freq):
+def calculate_pulse(self, rpm, steps_per_rev, freq):
     pulse_length = int(60000 / rpm / steps_per_rev + 0.5)   # ms per step
     if pulse_length < int(1000 / freq + 0.5):               # can't be faster than one PWM period
         raise Exception("Stepper Motor RPM too high %d" % rpm)
     return pulse_length
 ```
 
-This converts your desired rotational speed (revolutions per minute) into "how many milliseconds to wait between each step," given how many steps make up one revolution. The built-in sanity check refuses speeds that would require stepping faster than the PCA9685's own PWM period allows — a good example of validating a physical constraint in software before it causes silent, confusing failures.
+This converts your desired rotational speed (revolutions per minute) into "how many milliseconds to wait between each step," given how many steps make up one revolution. This is now a method on `Stepper` itself (called internally as `self.calculate_pulse(...)`) rather than a standalone module function, but its job is unchanged: it validates and computes the same per-step delay. The built-in sanity check refuses speeds that would require stepping faster than the PCA9685's own PWM period allows — a good example of validating a physical constraint in software before it causes silent, confusing failures.
 
 ### Using the class
 
 ```python
 stepper = Stepper(controller, 1, steps_per_rev=512, rpm=6)
-stepper.step(200)          # move 200 steps forward, then release the coils
+stepper.step(200)             # move 200 steps forward, then release the coils
 stepper.step(-50, hold=True)  # move 50 steps backward and keep holding torque afterward
-stepper.angle(90, rpm=10)   # rotate 90° at 10 RPM
+stepper.angle(90, rpm=10)     # rotate 90° at 10 RPM
 ```
 
-`angle()` is a thin convenience wrapper that just converts a desired angle into a step count using `step_angle = 360 / steps_per_rev`, then calls `step()` — another good example of building a friendlier, physically-meaningful method on top of a more primitive one.
+`angle()` is a thin convenience wrapper that just converts a desired angle into a step count using `step_angle = 360 / steps_per_rev`, then calls `step()`:
+
+```python
+def angle(self, degrees, hold=False, rpm=None):
+    steps = int(degrees / self.step_angle + copysign(0.5, degrees))
+    self.step(steps, hold, rpm)
+```
+
+The `copysign(0.5, degrees)` term is what makes rounding correct for negative angles too. Plain `int(x + 0.5)` rounding works fine for positive numbers (`int(4.6) = 4`, and adding 0.5 first bumps genuine halves and above up to the next integer), but Python's `int()` always truncates *toward zero*, so applying the same `+ 0.5` trick to a negative number rounds it toward zero rather than away from it — e.g. `int(-4.6 + 0.5) = int(-4.1) = -4`, one step short of the correct answer of `-5`. `copysign(0.5, degrees)` returns `+0.5` for a positive angle and `-0.5` for a negative angle, so the correction is always applied in the direction that rounds *away from zero*, giving symmetric, correct rounding for both directions — a nice general-purpose pattern worth remembering any time you round signed values in Python.
 
 ### Torque, speed, and why steppers are used open-loop
 
@@ -331,7 +444,7 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 
 ---
 
-## 6. Wiring and power safety — the rules that apply to everything above
+## 7. Wiring and power safety — the rules that apply to everything above
 
 1. **Separate logic power from motor/servo power.** The Kookaberry/PCA9685 logic side should be powered from the board's own logic supply; servo V+ and motor VM/VIN should come from a separate, adequately rated external supply ([Adafruit PCA9685 guide](https://learn.adafruit.com/16-channel-pwm-servo-driver?view=all); [SparkFun TB6612FNG hookup guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)).
 2. **Always tie the grounds together.** I2C, PWM, and H-bridge logic signals are all measured relative to ground — if the logic and power-supply grounds aren't common, "high" and "low" become meaningless and behaviour becomes erratic ([Adafruit PCA9685 guide](https://learn.adafruit.com/16-channel-pwm-servo-driver?view=all)).
@@ -343,15 +456,15 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 
 ---
 
-## 7. Quick reference — classes and methods
+## 8. Quick reference — classes and methods
 
 | Class | Construct with | Key methods/properties | What they physically do |
 |---|---|---|---|
 | `PCA9685` | `PCA9685(i2c, address=0x40, freq=50)` | `.frequency`, `.duty(index, value)`, `.pwm(index, on, off)`, `.reset()` | Low-level 16-channel PWM generator; everything else builds on this. |
-| `Servo` (angular) | `Servo(controller, channel, min_us=, max_us=, degrees=180)` | `.angle = x` (0..degrees), `.release()` | Sends a calibrated pulse width commanding a target shaft position. |
-| `Servo` (continuous) | Same class, calibrated around the servo's neutral pulse | `.speed = x` (-1..+1), `.release()` | Sends a pulse width that the servo interprets as speed + direction, not position. |
-| `Motor` | `Motor(controller, motor)` (motor 1–4) | `.speed = x` (-100..+100), `.release()` | PWMs one of two H-bridge logic inputs to set direction and speed of a DC motor. |
-| `Stepper` | `Stepper(controller, stepper, steps_per_rev=512, rpm=6)` (stepper 1–2) | `.step(n, hold=False, rpm=None)`, `.angle(a, hold=False, rpm=None)` | Sequences four H-bridge logic inputs to advance a bipolar stepper by discrete steps. |
+| `Servo` (angular) | `Servo(controller, channel, min_us=1000, max_us=2000, degrees=180, midpoint_us=None, range_us=None, freq_compensation=0, clockwise=True, mid_zero=True)` | `.angle = x` (0..degrees, or roughly -degrees/2..+degrees/2 if `mid_zero=True`), `.release()` | Sends a calibrated, oscillator-corrected pulse width commanding a target shaft position, with adjustable direction and zero-point convention. |
+| `Servo` (continuous) | Same class, calibrated around the servo's neutral pulse | `.speed = x` (-1..+1), `.release()` | Sends a pulse width that the servo interprets as speed + direction, not position. `clockwise`/`mid_zero` do not apply here. |
+| `Motor` | `Motor(controller, motor)` (motor 1–4) | `.speed = x` (-100..+100), `.release()` | PWMs one of two H-bridge logic inputs to set direction and speed of a DC motor. `.release()` now correctly stops both directions. |
+| `Stepper` | `Stepper(controller, stepper, steps_per_rev=512, rpm=6)` (stepper 1–2) | `.step(n, hold=False, rpm=None)`, `.angle(a, hold=False, rpm=None)` | Sequences four H-bridge logic inputs to advance a bipolar stepper by discrete steps; `.angle()` now rounds negative angles correctly. |
 
 **Channel map used by this driver:** servo channels 1–8 map to PCA9685 channels 0–7; motors 1–4 and steppers 1–2 both use PCA9685 channels 8–15 (two channels per motor, four per stepper) — so a `Motor` and a `Stepper` object must never be constructed for overlapping channel ranges on the same board.
 
@@ -359,7 +472,8 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 
 ## Sources
 
-- [NXP PCA9685 datasheet](https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)
+- [NXP PCA9685 datasheet (Adafruit-hosted copy)](https://cdn-shop.adafruit.com/datasheets/PCA9685.pdf)
+- [NXP PCA9685 datasheet (NXP official)](https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf)
 - [Adafruit 16-Channel PWM/Servo Driver — overview](https://learn.adafruit.com/16-channel-pwm-servo-driver/overview)
 - [Adafruit 16-Channel PWM/Servo Driver — full guide](https://learn.adafruit.com/16-channel-pwm-servo-driver?view=all)
 - [Adafruit 16-Channel PWM/Servo Driver — hooking it up (power)](https://learn.adafruit.com/16-channel-pwm-servo-driver/hooking-it-up)
@@ -374,7 +488,10 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 - [Parallax Continuous Rotation Servo guide](https://learn.parallax.com/kickstarts/parallax-continuous-rotation-servo/)
 - [Oriental Motor — Stepper Motor Basics](https://www.orientalmotor.com/stepper-motors/technology/stepper-motor-basics.html)
 - [MicroPython machine.I2C documentation](https://docs.micropython.org/en/latest/library/machine.I2C.html)
-- [AustSTEM — What is the Kookaberry](https://auststem.com.au/what-is-the-kookaberry/)
+- [va3wam — calibrateServoMotor (PCA9685 oscillator calibration notes)](https://github.com/va3wam/calibrateServoMotor)
+- [arduini group discussion on PCA9685 oscillator frequency variance](https://groups.io/g/arduini/topic/oscillator_frequency/81444150)
+- [kpower.com — Troubleshooting Common PCA9685 Servo Driver Issues](https://www.kpower.com/insight_servo/7483.html)
+- [AustSTEM: What is the Kookaberry](https://auststem.com.au/what-is-the-kookaberry/)
 - [AustSTEM — A journey around the Kookaberry](https://learn.auststem.com.au/a-journey-around-the-kookaberry/)
 - [Kookaberry releases repository (GitHub)](https://github.com/kookaberry/kooka-releases)
-- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation)
+- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation), 9 July 2026 revision

@@ -62,6 +62,8 @@ def remap(old_val, old_min, old_max, new_min, new_max):
 
 _I2C_ADDRESS = 0x40
 
+
+
 class PCA9685:
     """
     A Class to drive the PCA9685 PWM driver
@@ -87,14 +89,15 @@ class PCA9685:
     @frequency.setter
     def frequency(self,f):
         """Set the pulse frequency"""
-        prescale = int(25000000.0 / 4096.0 / f + 0.5)
+        prescale = int(25000000.0 / 4096.0 / f + 0.5) - 1
         old_mode = self._read(0x00) # Mode 1
         self._write(0x00, (old_mode & 0x7F) | 0x10) # Disable oscillator
         self._write(0xfe, prescale) # Apply prescale
         self._write(0x00, old_mode) # Start oscillator
         sleep_ms(1)
         self._write(0x00, old_mode | 0xa1) # Mode 1, autoincrement on
-        self._frequency = 1/((prescale-0.5)*4096/25e6)
+        self._frequency = 25e6 / ((prescale+1)*4096)
+        # print("Prescale =",prescale, hex(prescale), self._frequency)
         
     def pwm(self, index, on=None, off=None):
         if on is None or off is None:
@@ -130,9 +133,13 @@ class Servo:
     A Servo class with methods for angle and continuous speed servos using the PCA9685 PWM driver
     """
 
-    def __init__(self, controller, channel, min_us=600, max_us=2400, degrees=180, midpoint_us=None, range_us=None):
+    def __init__(self, controller, channel, min_us=1000, max_us=2000, degrees=180, midpoint_us=None, range_us=None, freq_compensation=0,
+                 clockwise=True, mid_zero=True):
+        if freq_compensation < -15: freq_compensation = -15  # freq_compensation (+/-15%) provides a way to compensate for fast/slow PCA9685 25MHz internal clock
+        if freq_compensation > 15: freq_compensation = 15
+        self.freq_compensation = 1 + freq_compensation/100
         self.freq = controller.frequency
-        self.period = 1_000_000/self.freq # microseconds
+        self.period = 1_000_000/(self.freq * self.freq_compensation) # microseconds
         if midpoint_us is not None and range_us is not None: # option to define the servo timing with a midpoint and a range
             min_us = midpoint_us - range_us/2
             max_us = midpoint_us + range_us/2
@@ -144,6 +151,8 @@ class Servo:
             raise Exception("Invalid Servo Channel %d" % channel)
 #        self.channel = {4:0,3:1,2:2,1:3}[channel] # original PiicoDev channel mapping
         self.channel = int(channel)-1 # map to PCA9685 channels 0-7 inclusive
+        self.clockwise = clockwise # Sets direction of servo with increasing pulsewidth
+        self.mid_zero = mid_zero # Sets the mid-point angle (True=0 or False=90)
         
     def _us2duty(self, value):
         return int(4095 * value / self.period + 0.5)
@@ -153,10 +162,17 @@ class Servo:
         return self._angle
     @angle.setter
     def angle(self, x):
+        # First do the necessary ange compensation for chosen direction and mid-point angle
+        self._angle = x
+        if self.clockwise == True: x = self._degrees - x # Transform the direction of rotation
+        if self.mid_zero == True:  # Compensate for zero midpoint
+            if self.clockwise == True: x = x - 90
+            else: x = x + 90
+        # Now work out the PWM duty cyce to achieve the required pulse length
         duty = self.min_duty + (self.max_duty - self.min_duty) * x / self._degrees
         duty = min(self.max_duty, max(self.min_duty, int(duty)))
-        self.controller.duty(self.channel, duty)
-        self._angle = min(self._degrees,max(x,0)) # saturate the property
+        self.controller.duty(self.channel, duty, invert=False)
+        # self._angle = min(self._degrees,max(x,0)) # saturate the property - deprecated
         
     @property
     def speed(self):
@@ -209,18 +225,18 @@ class Motor:
         self.controller.duty(self.channel_fwd, 0)
         self.controller.duty(self.channel_rev, 0)
 
-def calculate_pulse(rpm,steps_per_rev,freq):
-    pulse_length = int(60000 / rpm / steps_per_rev + 0.5) # pulse length in milliseconds
-    if pulse_length < int(1000 / freq + 0.5): # Pulse cannot be less than PWM period
-        raise Exception("Stepper Motor RPM too high %d" % rpm)
-    return pulse_length
-
 
 class Stepper:
     """
     A Stepper motor class with methods for steps and angle translation using the PCA9685 PWM driver
     Each motor uses four PWM channels
     """
+
+    def calculate_pulse(self, rpm,steps_per_rev, freq):
+        pulse_length = int(60000 / rpm / steps_per_rev + 0.5) # pulse length in milliseconds
+        if pulse_length < int(1000 / freq + 0.5): # Pulse cannot be less than PWM period
+            raise Exception("Stepper Motor RPM too high %d" % rpm)
+        return pulse_length
 
     def __init__(self, controller, stepper, steps_per_rev=512, rpm=6):
         # Check motor number is in range
@@ -237,7 +253,7 @@ class Stepper:
         self.rpm = rpm
         self.steps_per_rev = steps_per_rev
         self.step_angle = 360 / self.steps_per_rev
-        self.pulse_length = calculate_pulse(self.rpm, self.steps_per_rev, self.freq) # Stepper pulse length in milliseconds
+        self.pulse_length = self.calculate_pulse(self.rpm, self.steps_per_rev, self.freq) # Stepper pulse length in milliseconds
         
     def step(self, steps, hold=False, rpm=None):  # Move the Stepper by n steps where n is a positive or negative integer
                                                 # hold indicates if power is retained (True) or released (False)
@@ -251,14 +267,14 @@ class Stepper:
         
         # Update motor speed if specified
         if rpm is not None and rpm > 0:
-            self.pulse_length = calculate_pulse(rpm, self.steps_per_rev, self.freq)
+            self.pulse_length = self.calculate_pulse(rpm, self.steps_per_rev, self.freq)
             self.rpm = rpm
 
         # print("Steps =",steps, " RPM =", self.rpm, " Delay =", self.pulse_length)
             
         for coil in range(0, abs(steps)): # Repeat for the number of steps
-            self.controller.duty(channels[(coil+2)%4],0) # Switch complementary H-Brideg output off
-            self.controller.duty(channels[coil%4],4095) # Switch first coil on
+            self.controller.duty(channels[(coil+2) % 4], 0) # Switch complementary H-Brideg output off
+            self.controller.duty(channels[coil % 4], 4095) # Switch first coil on
             # print(channels[(coil+2)%4],0, ":",channels[coil],4095)
             sleep_ms(self.pulse_length) # Delay to match desired RPM (see initialisation)
                 
@@ -272,27 +288,30 @@ class Stepper:
         
 
 
-
-# Test script
+#------------------------------End of driver script----------------------------------------------------------------------------
+# Test scripts - uncomment the required sections
+'''
 from machine import SoftI2C, Pin
 import time
 
 i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B'))
-controller = PCA9685(i2c,address=0x40)
+controller = PCA9685(i2c,address=0x40,freq=50)
 '''
-servo = Servo(controller, 8,midpoint_us=1600, range_us=2600, degrees=180)
+'''
+servo = Servo(controller, 8,midpoint_us=1500, range_us=2400, degrees=180, freq_compensation=12, clockwise=True, mid_zero=True)
+
 # Step the servos
 servo.angle = 0
 sleep_ms(1000)
-servo.angle = 90
+servo.angle = -45
 sleep_ms(1000)
-servo.angle = 180
+servo.angle = -90
 sleep_ms(1000)
 servo.angle = 0
 sleep_ms(1000)
 
 # Sweep the servo slowly 0->180°
-for x in range(0,90,5):
+for x in range(0,95,5):
     servo.angle = x
     sleep_ms(40)
 '''
