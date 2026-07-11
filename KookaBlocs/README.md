@@ -8,4 +8,4 @@ This repository is organised into folders representing a STEM area of interest, 
 
 Each folder contains a further description of its contents. Please feel free to explore, download, run and experiment with your Kookaberry.
 
-Please refer to the [KookaBlocs Reference Guide](https://kookablocs-reference-guide.readthedocs.io/en/latest/index.html) - a guide to the **KookaBloc** visual programming language.
+Please refer to the [KookaBlocs Reference Guide](https://kookablocs-reference-guide.readthedocs.io/en/latest/index.html) - a guide to the **KookaBlocs** visual programming language.
