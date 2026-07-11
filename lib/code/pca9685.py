@@ -147,8 +147,8 @@ class Servo:
         self.max_duty = self._us2duty(max_us)
         self._degrees = degrees
         self.controller = controller
-        if channel < 1 or channel > 8:
-            raise Exception("Invalid Servo Channel %d" % channel)
+        if channel < 1 or channel > 16:
+            raise Exception("Invalid Servo Channel %d, Range 1-16" % channel)
 #        self.channel = {4:0,3:1,2:2,1:3}[channel] # original PiicoDev channel mapping
         self.channel = int(channel)-1 # map to PCA9685 channels 0-7 inclusive
         self.clockwise = clockwise # Sets direction of servo with increasing pulsewidth
@@ -210,7 +210,7 @@ class Motor:
     @speed.setter
     def speed(self,x):
         self._speed = x
-        duty = int(remap(abs(x), 0, 100, 0, 4095)) # Map the speed to the duty cycle (0-100 -> 0->4095)
+        duty = int(remap(abs(x), 0, 100.001, 0, 4095)) # Map the speed to the duty cycle (0-100 -> 0->4095)
         if x > 0:
             self.controller.duty(self.channel_rev, 0)
             self.controller.duty(self.channel_fwd, duty,invert=True)
@@ -319,7 +319,8 @@ for x in range(0,95,5):
 motor = Motor(controller,4)
 for s in range(-100, 105, 5):
     motor.speed = s
-    sleep_ms(1000)
+    # print(s, controller.pwm(14), controller.pwm(15))
+    sleep_ms(500)
 motor.release()
 '''
 '''

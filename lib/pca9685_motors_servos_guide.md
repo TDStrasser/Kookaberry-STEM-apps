@@ -4,26 +4,21 @@
 
 This guide explains **why** the `PCA9685`, `Servo`, `Motor`, and `Stepper` classes in `pca9685.py` work the way they do, so that you can use them confidently — and eventually write similar drivers yourself. It assumes no prior embedded electronics knowledge beyond basic MicroPython (variables, classes, loops).
 
-*This revision covers the updated driver (9 July 2026 build) which corrects earlier issues and adds an oscillator frequency compensator and direction/midpoint options for angular servos.*
+*This revision covers the updated driver (11 July 2026 build), which fixes a `Motor.speed` boundary bug, extends the `Servo` channel range to the PCA9685's full 1–16 channels, and adds explicit support notes for the Core Electronics PiicoDev Servo Driver board.*
 
 ---
 
 ## 0. What changed since the previous driver revision
 
-The previous version of this driver had three implementation issues, all now corrected:
+*(this revision dated 11 July 2026 — the oscillator compensation and direction/midpoint features from the prior revision, Section 3, are unchanged)*
 
 | Issue | Where | Fix |
 |---|---|---|
-| `NameError` risk constructing a `Servo` | `Servo.__init__` referenced an undefined `freq` before it was assigned | `self.freq = controller.frequency` is now set *before* `self.period` is calculated from it |
-| `Motor.release()` never released the reverse channel | `release()` zeroed `channel_fwd` twice instead of also zeroing `channel_rev` | `release()` now correctly zeroes both `channel_fwd` and `channel_rev` |
-| Negative angles could round to one step short | `Stepper.angle()` used `int(x + 0.5)`, which truncates negative results toward zero rather than rounding away from it | Now uses `int(degrees / self.step_angle + copysign(0.5, degrees))`, which rounds correctly for both positive and negative angles |
+| `Motor.speed = 100` (or `-100`) silently behaved exactly like `Motor.speed = 0` | The `Motor.speed` setter, combined with a boundary special-case inside `PCA9685.duty()` | The duty-cycle calculation now divides by `100.001` instead of `100`, so a commanded speed of exactly 100 can never land on the exact register value that was aliasing with "released." Full root-cause walkthrough in Section 5 |
+| `Servo` channel range was artificially limited to 1–8 | `Servo.__init__` channel validation | Range extended to the PCA9685's full 1–16, so generic 16-channel breakout boards (and other boards) can be fully used — see the new board-compatibility note in Section 2 |
+| *(Resolved — no longer a caveat)* `servo.angle` getter previously returned the post-transform value rather than what you'd assigned | `Servo.angle` setter | `self._angle = x` is now set at the very top of the setter, *before* the `clockwise`/`mid_zero` transform runs, so reading `servo.angle` back now reliably returns exactly what you last assigned |
 
-Two new capabilities have also been added, both explained in detail in Section 3 below:
-
-- **PCA9685 oscillator frequency compensation** (`freq_compensation` on `Servo`) — corrects servo pulse-width calculations for the real-world inaccuracy of the PCA9685's internal 25 MHz oscillator.
-- **Direction and midpoint options** (`clockwise`, `mid_zero` on `Servo`) — let you adapt the meaning of `servo.angle` to match how a servo is physically mounted and which zero-angle convention you want to use.
-
-The `Servo` class's default pulse-width range has also been narrowed from 600–2400 µs to a more conservative **1000–2000 µs**, and the module-level `calculate_pulse()` helper is now a method on `Stepper` (`self.calculate_pulse(...)`) rather than a free function — a minor internal reorganisation with no effect on how you call `Stepper.step()` or `Stepper.angle()`.
+Also newly documented in this revision (no code change, just guidance): explicit channel-mapping and I2C-address notes for the **Core Electronics PiicoDev Servo Driver** board, which only exposes 4 servo channels and wires them in reverse order relative to this driver's straight-through channel numbering — see Section 2.
 
 ---
 
@@ -154,6 +149,30 @@ servo = Servo(controller, 8, midpoint_us=1500, range_us=2400, degrees=180)
 
 Not every servo's centre is exactly 1500 µs, and not every servo accepts exactly 1000–2000 µs. Real servos vary by manufacturer, and pushing a pulse beyond a servo's mechanical limit causes it to buzz, draw excess current, heat up, and can strip its gears ([Adafruit motor selection guide](https://learn.adafruit.com/adafruit-motor-selection-guide/rc-servos)). Calibration means experimentally finding the safe `min_us`/`max_us` (or `midpoint_us`/`range_us`) for *your* specific servo before trusting it with a full sweep. Always start a new servo cautiously — command small angle changes first and watch/listen for strain.
 
+### Which physical board is your `Servo` object talking to?
+
+The channel number you pass to `Servo(controller, channel)` is a **software channel number handled entirely by this driver** — it isn't necessarily the same number printed on the silkscreen of whatever physical PCA9685 board you've wired up. Now that the valid range has been extended to the chip's full **1–16**, it's worth being explicit about how that number maps to real hardware, because it differs by board:
+
+| Board | Servo channels available | Software channel → PCA9685 hardware channel | Default I2C address |
+|---|---|---|---|
+| AustSTEM Quokka Motor-Servo Driver module | 1–8 (channels 9–16 are wired to the on-board H-bridges for `Motor`/`Stepper`, not servo headers) | Straight-through: channel `n` → PCA9685 channel `n-1` | `0x40` |
+| Generic 16-channel PCA9685 breakout (e.g. Adafruit's 16-Channel PWM/Servo Driver) | 1–16, all usable as plain servo headers | Straight-through: channel `n` → PCA9685 channel `n-1` | `0x40` ([Adafruit 16-Channel PWM/Servo Driver overview](https://learn.adafruit.com/16-channel-pwm-servo-driver/overview)) |
+| Core Electronics PiicoDev Servo Driver | 4 (silkscreen-labelled 1–4 only) | **Reversed**: silkscreen 1 → PCA9685 channel 3, 2 → 2, 3 → 1, 4 → 0 | `0x44` ([Core Electronics PiicoDev Servo Driver product page](https://core-electronics.com.au/piicodev-servo-driver.html)) |
+
+The reversed PiicoDev mapping isn't a guess — it's documented directly in Core Electronics' own driver, which this Kookaberry driver is derived from (see the file header). Their original module maps servo channels with `self.channel = {4:0,3:1,2:2,1:3}[channel]`, explicitly commented `# map {silk label:PCA9685 channel}` ([Core Electronics `PiicoDev_Servo.py`, GitHub](https://github.com/CoreElectronics/CE-PiicoDev-PyPI/blob/main/src/PiicoDev_Servo.py)). This Kookaberry driver keeps that exact line, commented out, immediately above its own simpler replacement:
+
+```python
+#        self.channel = {4:0,3:1,2:2,1:3}[channel] # original PiicoDev channel mapping
+self.channel = int(channel)-1 # map to PCA9685 channels 0-7 inclusive
+```
+
+Because that reversal was left out when this line was replaced, **if you plug a PiicoDev Servo Driver into a Kookaberry running this driver, `Servo(controller, 1)` will actually drive whatever you've physically plugged into the header silkscreened "4", not "1"** — and vice versa for channels 2↔3. Two practical consequences worth flagging to students:
+
+- Either physically remember the reversal (plug your "first" servo into the header labelled **4**, your "second" into **3**, and so on), or translate your own channel number before constructing the `Servo` object, e.g. `Servo(controller, {1:4,2:3,3:2,4:1}[my_channel])`.
+- The PiicoDev board's I2C address defaults to `0x44`, not the PCA9685's usual `0x40` ([Core Electronics PiicoDev Servo Driver product page](https://core-electronics.com.au/piicodev-servo-driver.html)) — you must pass it explicitly, e.g. `PCA9685(i2c, address=0x44)`, or the driver won't find the chip on the bus at all.
+
+If you're using the Quokka board itself, there's no reason to go past channel 8 for servos — channels 9–16 are physically wired to the H-bridge motor/stepper outputs, so constructing a `Servo` there won't damage anything, but it also won't do anything useful (you'd be sending servo pulses into a motor driver's logic input). The 1–16 range exists to support generic breakout boards and the PiicoDev board, not to unlock extra servo headers on the Quokka board itself.
+
 ### Power supply — why it matters here
 
 Servos draw large, spiky currents, especially several hundred milliamps for small servos and over 1 A for high-torque servos under load ([Adafruit PCA9685 hookup guide](https://learn.adafruit.com/16-channel-pwm-servo-driver/hooking-it-up)). Never power servos from the Kookaberry's own regulated rail — the current surge can brown out or reset the board. Always give servos their **own stable 5–6 V supply**, and connect that supply's ground to the Kookaberry/PCA9685 ground so all the PWM signal levels share the same 0 V reference ([Adafruit PCA9685 guide](https://learn.adafruit.com/16-channel-pwm-servo-driver?view=all)).
@@ -236,7 +255,7 @@ servo.angle = -90   # that extreme
 
 **A caveat worth knowing:** `mid_zero`'s offset is hard-coded to exactly 90 (`x - 90` / `x + 90`), which assumes a servo with `degrees=180` (so that 90 really is the half-way point). If you ever construct a `Servo` with a different `degrees` value and also set `mid_zero=True`, the "centre" it computes will not actually be at the geometric midpoint of your travel range — worth testing explicitly if you use a non-180° servo with `mid_zero` enabled.
 
-**Another subtlety worth knowing:** the `angle` property's getter returns `self._angle`, which is saved *after* the `clockwise`/`mid_zero` transform has already been applied — so with the new defaults, reading back `servo.angle` immediately after `servo.angle = -45` will not necessarily show you `-45` again. If your program needs to remember the angle it last commanded, it's safer to keep track of that value yourself in a variable rather than relying on reading the property back.
+**Resolved in this revision:** an earlier version of the getter returned `self._angle` saved *after* the `clockwise`/`mid_zero` transform had already been applied, so reading back `servo.angle` immediately after `servo.angle = -45` wouldn't necessarily show you `-45` again. The setter now assigns `self._angle = x` at the very start, before any transform runs, so `servo.angle` reliably returns exactly what you last assigned to it — you no longer need to track the commanded angle yourself in a separate variable.
 
 ---
 
@@ -354,6 +373,35 @@ def release(self):
 
 so calling `motor.release()` (or setting `speed = 0`) reliably stops the motor regardless of which direction it was last driven in — this is a good habit to rely on whenever you want to guarantee a motor is fully stopped, for example at the start or end of a program.
 
+### The `speed = 100` bug, and why boundary values are dangerous in embedded PWM code
+
+The previous driver revision had a genuine bug: commanding `motor.speed = 100` (full forward) or `motor.speed = -100` (full reverse) behaved exactly like `motor.speed = 0` — the motor didn't reach full speed, it stopped. Tracing through the old code shows precisely why, and it's a useful lesson in how dangerous it is for a calculation to land exactly on a boundary value.
+
+The old setter computed:
+
+```python
+duty = int(remap(abs(x), 0, 100, 0, 4095))   # old, buggy version
+```
+
+For `x = 100`, `remap(100, 0, 100, 0, 4095)` comes out to exactly `4095` — the very top of the PCA9685's 12-bit range. That value is then passed through `controller.duty(self.channel_fwd, duty, invert=True)`. Inside `PCA9685.duty()`, `invert=True` flips the value first:
+
+```python
+if invert:
+    value = 4095 - value   # 4095 - 4095 = 0
+```
+
+A commanded duty of exactly 4095 becomes exactly 0 after inversion — and `value == 0` is one of `duty()`'s two special-cased boundary values, writing `self.pwm(index, 0, 4095)` to the chip. Now compare that to what `Motor.release()` writes to the very same channel: `self.controller.duty(self.channel_fwd, 0)`, which (with the default `invert=False`) also hits the `value == 0` branch and writes the *identical* `self.pwm(index, 0, 4095)`. **Full forward speed and a fully released motor were writing the same register values to the forward channel** — not because of some subtle electrical issue, but because two logically distinct commanded states (`100` and `0`) happened to alias to the exact same code path once you follow the arithmetic all the way through.
+
+The fix simply changes the remap denominator from `100` to `100.001`:
+
+```python
+duty = int(remap(abs(x), 0, 100.001, 0, 4095))   # fixed version
+```
+
+`remap(100, 0, 100.001, 0, 4095)` now works out to `4095 * 100/100.001 ≈ 4094.96`, which `int()` truncates down to `4094` — one count short of the boundary. After inversion, `4095 - 4094 = 1`, which falls through to `duty()`'s normal `else` branch (`self.pwm(index, 0, 1)`) instead of either special case. The practical effect on the motor of being one PWM count away from absolute maximum is imperceptible — a 1/4096 change in pulse timing — but it reliably avoids the aliasing. This is a common, pragmatic embedded-programming technique: when a calculation must never land exactly on a value that triggers different logic, nudge the input range slightly so the exact boundary becomes mathematically unreachable, rather than adding extra conditional logic to special-case it after the fact.
+
+**Worth knowing — flagged for the module author to verify on hardware, not asserted as certain fact:** the `value == 0` and `value == 4095` special cases inside `PCA9685.duty()` are what caused the aliasing above, and the same mechanism could plausibly also affect `Servo.release()` and `Motor.release()`, both of which deliberately call `duty(channel, 0)` — that is the intended, designed-for way to reach the `value == 0` boundary, so it isn't buggy in the same sense as the `speed = 100` aliasing was. But it's worth checking with a scope or logic analyser that the specific register pattern this boundary case writes (`pwm(index, 0, 4095)`) actually produces the fully-off output the name `release()` promises. The PCA9685 datasheet's documented technique for a guaranteed full-off state uses register value **4096** (a 13th "override" bit), not 4095 ([NXP PCA9685 datasheet](https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf)). Comparing this driver's boundary branches against the plain formula its own `else` branch uses for every other duty value (`pwm(index, 0, value)`, where a larger `value` means more ON-time) suggests the two special cases may be swapped relative to their evident intent — worth double-checking, though it doesn't affect the `speed = 100` fix above, which sidesteps the boundary case entirely rather than depending on what it actually does.
+
 ### Ratings you must respect
 
 The DRV8833 accepts a motor supply from about 2.7 V to 10.8 V, and depending on package, is rated around 1.5 A RMS / 2 A peak per bridge (some carrier boards, e.g. Pololu's, spec closer to 1.2 A continuous per channel) ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833); [Pololu DRV8833 carrier guide](https://www.pololu.com/product-info-merged/2130)). Crucially, a motor's **stall current** (drawn when the shaft can't turn — e.g. jammed or under heavy load) is typically much higher than its free-running current, and this is what actually trips the DRV8833's overcurrent, thermal, or undervoltage protection ([TI DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833)). Choose motors and supplies that respect these limits — the built-in protection is a safety net, not a substitute for correct sizing.
@@ -466,7 +514,7 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 | `Motor` | `Motor(controller, motor)` (motor 1–4) | `.speed = x` (-100..+100), `.release()` | PWMs one of two H-bridge logic inputs to set direction and speed of a DC motor. `.release()` now correctly stops both directions. |
 | `Stepper` | `Stepper(controller, stepper, steps_per_rev=512, rpm=6)` (stepper 1–2) | `.step(n, hold=False, rpm=None)`, `.angle(a, hold=False, rpm=None)` | Sequences four H-bridge logic inputs to advance a bipolar stepper by discrete steps; `.angle()` now rounds negative angles correctly. |
 
-**Channel map used by this driver:** servo channels 1–8 map to PCA9685 channels 0–7; motors 1–4 and steppers 1–2 both use PCA9685 channels 8–15 (two channels per motor, four per stepper) — so a `Motor` and a `Stepper` object must never be constructed for overlapping channel ranges on the same board.
+**Channel map used by this driver:** servo channels 1–16 map straight through to PCA9685 channels 0–15 (`channel - 1`); motors 1–4 and steppers 1–2 both use PCA9685 channels 8–15 (two channels per motor, four per stepper) — so a `Motor` and a `Stepper` object must never be constructed for overlapping channel ranges on the same board. On the **Quokka board specifically**, servo channels 9–16 physically overlap the motor/stepper H-bridge outputs and shouldn't be used for `Servo` objects, even though the software will accept them; on other PCA9685 boards without a fixed motor/servo split (e.g. a generic 16-channel breakout), all 16 channels are free for `Servo` use. The **Core Electronics PiicoDev Servo Driver** exposes only 4 channels, wires them in *reverse* order relative to this driver's straight-through numbering, and defaults to I2C address `0x44` instead of `0x40` — see Section 2.
 
 ---
 
@@ -494,4 +542,7 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 - [AustSTEM: What is the Kookaberry](https://auststem.com.au/what-is-the-kookaberry/)
 - [AustSTEM — A journey around the Kookaberry](https://learn.auststem.com.au/a-journey-around-the-kookaberry/)
 - [Kookaberry releases repository (GitHub)](https://github.com/kookaberry/kooka-releases)
-- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation), 9 July 2026 revision
+- [Core Electronics PiicoDev Servo Driver (4 Channel) — product page](https://core-electronics.com.au/piicodev-servo-driver.html)
+- [Core Electronics PiicoDev Servo Driver — Getting Started Guide](https://core-electronics.com.au/guides/piicodev-servo-driver-pca9685-getting-started-guide/)
+- [Core Electronics `PiicoDev_Servo.py` source (GitHub)](https://github.com/CoreElectronics/CE-PiicoDev-PyPI/blob/main/src/PiicoDev_Servo.py)
+- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation), 11 July 2026 revision
