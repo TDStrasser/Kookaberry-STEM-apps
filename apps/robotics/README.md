@@ -202,6 +202,6 @@ Start every new setup gently: test one device at a time, use small movements or 
 
 For a deeper explanation of how the `PCA9685`, `Servo`, `Motor`, and `Stepper` classes work, read the detailed guide:
 
-- [`pca9685_motors_servos_guide.md`](./pca9685_motors_servos_guide.md)
+- [`pca9685_motors_servos_guide.md`](https://github.com/TDStrasser/Kookaberry-STEM-apps/blob/master/lib/pca9685_motors_servos_guide.md)
 
 That guide explains the underlying PWM timing, channel mapping, servo calibration, H-bridge behaviour, stepper sequencing, and power-safety rules in more detail.
