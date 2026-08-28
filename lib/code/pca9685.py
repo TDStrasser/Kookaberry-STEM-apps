@@ -3,6 +3,8 @@
 # AUTHOR: Tony Strasser
 # DATE-CREATED: 30 June 2026
 # DATE-MODIFIED: 9 July 2026 - added extra servo channels, motor driver, and stepper motor code
+#                28 August 2026 - changed motor speed range (for continuous servo and motor) to -99.9 to +99.9 (from +/-100)
+#                                 to align with other motor drivers. Implemented inductive current protection on motor reversal.
 # VERSION: 1.0
 # SCRIPT: MicroPython for Kookaberry Version: 1.24 for the Raspberry Pi Pico with RP2040 and RP2350
 # LICENCE:
@@ -23,8 +25,8 @@ OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 # DESCRIPTION:
 # Controls the Quokka Motor-Servo Driver Module based on the PCA9685 PWM controller chip.
 # Contains classes and methods for:
-#  Servos (angle and continuous speed) on channels 1-8. Methods Servo.angle= (degrees), Servo.speed= -1 to +1
-#  Motors (1 to 4). Method is Motor.speed= -100 to +100
+#  Servos (angle and continuous speed) on channels 1-8. Methods Servo.angle= (degrees), Servo.speed= -99 to +99
+#  Motors (1 to 4). Method is Motor.speed= -99 to +99
 #  Steppers (1 to 2). Methods are:
 #                         Stepper.step(n, rpm) where n is the number of steps (+ or -), rpm is stepper speed.
 #                         Stepper.angle(a, rpm) where a is the rotation angle (+ or -), rpm is the stepper speed
@@ -180,10 +182,13 @@ class Servo:
     @speed.setter
     def speed(self,x):
         self._speed = x
-        duty = int(remap(x, -1, 1, self.min_duty, self.max_duty)+0.5)
+        duty = int(remap(x, -99, 99, self.min_duty, self.max_duty)+0.5)
         self.controller.duty(self.channel, duty,)
 
     def release(self):
+        self.controller.duty(self.channel, 0)
+
+    def stop(self): # Same as release but provided to match APIs for other motor controllers
         self.controller.duty(self.channel, 0)
 
 class Motor:
@@ -202,6 +207,7 @@ class Motor:
         self.channel_rev = 9 + (motor-1) * 2
         self.freq = controller.frequency
         self.controller = controller
+        self._speed = 0
 
     # Motor speed control - valid range is -100 to +100
     @property
@@ -209,8 +215,12 @@ class Motor:
         return self._speed
     @speed.setter
     def speed(self,x):
-        self._speed = x
-        duty = int(remap(abs(x), 0, 100.001, 0, 4095)) # Map the speed to the duty cycle (0-100 -> 0->4095)
+        duty = int(remap(abs(x), 0, 99.99, 0, 4095)) # Map the speed to the duty cycle (0-99.99 -> 0->4095)
+        # DRV8833 chip overcurrent protection in case of motor reversal
+        if (x * self._speed) < 0: # If a reversal
+            self.stop() # Reduce speed to zero
+            sleep_ms(50) # Wait for inductive motor current to reduce
+        # Now set the target speed
         if x > 0:
             self.controller.duty(self.channel_rev, 0)
             self.controller.duty(self.channel_fwd, duty,invert=True)
@@ -219,12 +229,16 @@ class Motor:
             self.controller.duty(self.channel_rev, duty,invert=True)
         else: # x = 0
             self.release()
+        self._speed = x # Remember the speed setting
 
     # Stop the PWM to both channels = zero speed
     def release(self):
         self.controller.duty(self.channel_fwd, 0)
         self.controller.duty(self.channel_rev, 0)
 
+    def stop(self):
+        self.controller.duty(self.channel_fwd, 0)
+        self.controller.duty(self.channel_rev, 0)
 
 class Stepper:
     """

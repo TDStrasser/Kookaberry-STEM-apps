@@ -48,11 +48,11 @@ def ramp(motor,s1,s2,step,delay):
         sleep_ms(delay)
 
 # Exercise the motor over its range
-speed_max = 1.0
-speed_step = 0.1
+speed_max = 99
+speed_step = 10
 step_delay = 1000
 ramp(servo,0,speed_max,speed_step,step_delay)
 ramp(servo,speed_max,-speed_max,-speed_step,step_delay)
 ramp(servo,-speed_max,0,speed_step,step_delay)
 
-servo.release()
+servo.stop()

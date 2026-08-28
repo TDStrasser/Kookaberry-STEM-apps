@@ -2,7 +2,7 @@ __name__ = 'PCA9685_Motor'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 11 July 2026
-# Date last modified: 
+# Date last modified: 28 August 2026 - testing new motor range of -/+99.9, changed to motor channel 1
 # Version: 1.0
 # MicroPython Version: 1.28 for the Kookaberry Pico RP2040/RP2350
 # This program is free software: you can redistribute it and/or modify
@@ -34,17 +34,17 @@ from time import sleep_ms
 i2c = SoftI2C(scl=Pin('P3A'), sda=Pin('P3B')) # Set up an I2C bus on P3
 controller = PCA9685(i2c,address=0x40,freq=50) # Initialise the PCA9685 chip
 
-# Set up a motor on the 4th motor H-bridge driver chip which uses PCA9685 channels 15 and 16
-motor = Motor(controller,4)
+# Set up a motor on the first motor H-bridge driver chip which uses PCA9685 channels 8 and 9
+motor = Motor(controller,1)
 
 # Run the motor through its range
-speeds = [0,-25,-50,-75,-100,-50,0,25,50,75,100,50,0] # Set up a list of speeds to run through
+speeds = [0,-25,-50,-75,-99.9,-50,50,75,99.9,50,0] # Set up a list of speeds to run through
 for s in speeds:
     motor.speed = s # Set the motor's speed
     # Advanced topic -
     # Work out the H-Bridge arm duty cycles by delving into the PCA9685 channel modulation data
-    pwm_plus_duty = (4095-controller.duty(14))/40.95 # PCA9685 channel 14 duty is 4095->0 (0->100%)
-    pwm_minus_duty = (4095-controller.duty(15))/40.95 # PCA9685 channel 15 duty is 4095->0 (0->100%)
+    pwm_plus_duty = (4095-controller.duty(8))/40.95 # PCA9685 channel 14 duty is 4095->0 (0->100%)
+    pwm_minus_duty = (4095-controller.duty(9))/40.95 # PCA9685 channel 15 duty is 4095->0 (0->100%)
     
     # Print the speed and PWM duties on the REPL console
     print('Speed =',motor.speed,'PWM Duty (+,-) = %d%%,%d%%' % (pwm_plus_duty, pwm_minus_duty) )
