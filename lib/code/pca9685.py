@@ -187,9 +187,11 @@ class Servo:
 
     def release(self):
         self.controller.duty(self.channel, 0)
+        self._speed = 0
 
     def stop(self): # Same as release but provided to match APIs for other motor controllers
         self.controller.duty(self.channel, 0)
+        self._speed = 0
 
 class Motor:
     """
@@ -228,17 +230,17 @@ class Motor:
             self.controller.duty(self.channel_fwd, 0)
             self.controller.duty(self.channel_rev, duty,invert=True)
         else: # x = 0
-            self.release()
+            self.stop()
         self._speed = x # Remember the speed setting
 
     # Stop the PWM to both channels = zero speed
-    def release(self):
-        self.controller.duty(self.channel_fwd, 0)
-        self.controller.duty(self.channel_rev, 0)
-
     def stop(self):
         self.controller.duty(self.channel_fwd, 0)
         self.controller.duty(self.channel_rev, 0)
+        self._speed = 0
+
+    def release(self):
+        self.stop()
 
 class Stepper:
     """
