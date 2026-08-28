@@ -4,21 +4,21 @@
 
 This guide explains **why** the `PCA9685`, `Servo`, `Motor`, and `Stepper` classes in `pca9685.py` work the way they do, so that you can use them confidently — and eventually write similar drivers yourself. It assumes no prior embedded electronics knowledge beyond basic MicroPython (variables, classes, loops).
 
-*This revision covers the updated driver (11 July 2026 build), which fixes a `Motor.speed` boundary bug, extends the `Servo` channel range to the PCA9685's full 1–16 channels, and adds explicit support notes for the Core Electronics PiicoDev Servo Driver board.*
+*This revision covers the updated driver (28 August 2026 build), which changes the continuous-servo and DC-motor speed convention to -99..+99, adds API-compatible `stop()` methods, and inserts a 50 ms software-requested zero-output interval before a commanded DC-motor direction reversal.*
 
 ---
 
 ## 0. What changed since the previous driver revision
 
-*(this revision dated 11 July 2026 — the oscillator compensation and direction/midpoint features from the prior revision, Section 3, are unchanged)*
+*(this revision dated 28 August 2026 — earlier fixes and features remain documented in the later sections)*
 
-| Issue | Where | Fix |
+| Issue / feature | Where | What changed |
 |---|---|---|
-| `Motor.speed = 100` (or `-100`) silently behaved exactly like `Motor.speed = 0` | The `Motor.speed` setter, combined with a boundary special-case inside `PCA9685.duty()` | The duty-cycle calculation now divides by `100.001` instead of `100`, so a commanded speed of exactly 100 can never land on the exact register value that was aliasing with "released." Full root-cause walkthrough in Section 5 |
-| `Servo` channel range was artificially limited to 1–8 | `Servo.__init__` channel validation | Range extended to the PCA9685's full 1–16, so generic 16-channel breakout boards (and other boards) can be fully used — see the new board-compatibility note in Section 2 |
-| *(Resolved — no longer a caveat)* `servo.angle` getter previously returned the post-transform value rather than what you'd assigned | `Servo.angle` setter | `self._angle = x` is now set at the very top of the setter, *before* the `clockwise`/`mid_zero` transform runs, so reading `servo.angle` back now reliably returns exactly what you last assigned |
+| Speed convention changed to -99..+99 | `Servo.speed` and `Motor.speed` setters | Continuous-servo remapping changed from `-1..+1` to `-99..+99`. The DC-motor public convention changed from `-100..+100` to `-99..+99`; its internal remap endpoint is `99.99`, keeping a documented maximum command of 99 away from the PCA9685 boundary value that caused the earlier full-speed alias. |
+| API-compatible stop method | `Servo.stop()` and `Motor.stop()` | Both new methods write the same channel values as their class's existing `release()` method. The source comment explicitly describes `Servo.stop()` as an API-compatibility alias; `Motor.stop()` is also byte-for-byte equivalent to `Motor.release()`. |
+| Inductive-current protection during DC-motor reversal | `Motor.__init__` and the `Motor.speed` setter | The motor now remembers its last command in `_speed`. If the new and previous commands have opposite signs (`x * self._speed < 0`), the setter calls `stop()`, waits 50 ms, and only then applies the new direction. This is a fixed zero-output interval, not a gradual ramp and not a measured-current control loop. |
 
-Also newly documented in this revision (no code change, just guidance): explicit channel-mapping and I2C-address notes for the **Core Electronics PiicoDev Servo Driver** board, which only exposes 4 servo channels and wires them in reverse order relative to this driver's straight-through channel numbering — see Section 2.
+**Source-code precision note:** the revision header says “-99.9 to +99.9,” the class description says “-99 to +99,” and the motor calculation uses an internal endpoint of `99.99`. The executable code does not reject out-of-range values: `remap()` saturates them. This guide therefore documents **-99..+99** as the intended public API, matching the class descriptions and keeping normal commands clear of the boundary special case. 
 
 ---
 
@@ -183,11 +183,11 @@ Servos draw large, spiky currents, especially several hundred milliamps for smal
 servo.release()   # sets duty = 0, stops sending a control pulse
 ```
 
-With no pulse present, most analog servos stop actively holding their position (they go "limp"), which is useful when you want a servo-driven arm to be moved by hand, or simply to reduce noise/current when a servo isn't in active use.
+If the requested zero duty produces no pulse at the pin, most analog servos stop actively holding their position (they go "limp"), which is useful when you want a servo-driven arm to be moved by hand, or simply to reduce noise/current when a servo isn't in active use. See the `PCA9685.duty()` boundary-value note in Section 5 before relying on this driver's present implementation as a guaranteed full-off command.
 
 ---
 
-## 3. New in this revision: compensating for oscillator drift, direction, and midpoint
+## 3. Servo calibration features: oscillator drift, direction, and midpoint
 
 ### `freq_compensation` — correcting for the real oscillator, not the ideal one
 
@@ -279,20 +279,29 @@ Parallax's own continuous servo documents 1300 µs as full-speed clockwise, 1500
 
 ```python
 speed = Servo(controller, 2, min_us=1000, max_us=2000)   # calibrate to your servo's neutral!
-speed.speed = 0.0     # stop (as close to neutral pulse as your calibration allows)
-speed.speed = 1.0     # full speed one direction
-speed.speed = -1.0    # full speed the other direction
+speed.speed = 0       # stop (as close to neutral pulse as your calibration allows)
+speed.speed = 99      # full commanded speed in one direction
+speed.speed = -99     # full commanded speed in the other direction
 ```
 
 ```python
 @speed.setter
 def speed(self,x):
     self._speed = x
-    duty = int(remap(x, -1, 1, self.min_duty, self.max_duty)+0.5)
+    duty = int(remap(x, -99, 99, self.min_duty, self.max_duty)+0.5)
     self.controller.duty(self.channel, duty)
 ```
 
-This reuses the exact same `min_duty`/`max_duty` calibration machinery as the angular servo (including the `freq_compensation` correction from Section 3) — note that `speed`, unlike `angle`, does **not** apply the `clockwise`/`mid_zero` transform, so those two flags only affect positional use of the class. This is a nice lesson in software design: one well-parameterised class can serve two different physical behaviours, but not every property needs to inherit every option.
+This revision changes the continuous-servo scale from the earlier fractional -1..+1 convention to **-99..+99**, matching the DC-motor API. `remap()` saturates values outside that interval rather than raising an exception, but -99..+99 is the documented range applications should use. The property reuses the exact same `min_duty`/`max_duty` calibration machinery as the angular servo (including the `freq_compensation` correction from Section 3) — note that `speed`, unlike `angle`, does **not** apply the `clockwise`/`mid_zero` transform, so those two flags only affect positional use of the class.
+
+Continuous servos now also have `stop()`. Its implementation is identical to `release()`:
+
+```python
+def stop(self):
+    self.controller.duty(self.channel, 0)
+```
+
+This is intended to remove the PCA9685 control pulse rather than command the calibrated neutral pulse. Therefore `servo.speed = 0` and `servo.stop()` are not the same API operation: the former maps zero to the midpoint pulse that tells a continuous servo to stop under active control, while the latter requests zero duty, like `servo.release()`. What a particular servo does after signal loss is device-dependent, so use `speed = 0` when a defined neutral command is required. Section 5 explains why the driver's current zero-duty register special case is worth verifying on hardware.
 
 **Practical trimming tip:** because the manufactured "neutral point" of a continuous servo is rarely exactly 1500 µs, students should expect to experimentally find the pulse width that actually gives zero rotation for their specific unit, then treat that as the servo's true centre when picking `min_us`/`max_us` (or use the physical trim screw many continuous servos have) ([Adafruit CircuitPython servo guide](https://cdn-learn.adafruit.com/downloads/pdf/using-servos-with-circuitpython.pdf)).
 
@@ -343,7 +352,7 @@ self.channel_rev = 9 + (motor-1) * 2
 and its `speed` setter drives *one* of those channels with a PWM duty cycle proportional to `abs(speed)`, while forcing the other to zero:
 
 ```python
-duty = int(remap(abs(x), 0, 100, 0, 4095))
+duty = int(remap(abs(x), 0, 99.99, 0, 4095))
 if x > 0:
     self.controller.duty(self.channel_rev, 0)
     self.controller.duty(self.channel_fwd, duty, invert=True)
@@ -351,29 +360,56 @@ elif x < 0:
     self.controller.duty(self.channel_fwd, 0)
     self.controller.duty(self.channel_rev, duty, invert=True)
 else:
-    self.release()
+    self.stop()
 ```
 
-Rather than holding IN1 permanently high and pulsing IN2 (a very common alternative scheme), this driver **PWMs the active direction input itself** and holds the *other* direction input steady at 0. This still achieves proportional speed control — as duty cycle increases, the motor spends more of each PWM period actually being driven forward or reverse, so its average speed rises, while at 0% duty (or `speed = 0`) the motor coasts/releases ([SparkFun TB6612FNG hookup guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)).
+Rather than holding IN1 permanently high and pulsing IN2 (a very common alternative scheme), this driver **PWMs the active direction input itself** and requests zero duty on the *other* direction input. With correctly encoded PCA9685 boundary states, this is the DRV8833's fast-decay PWM scheme: increasing active-input duty increases the fraction of each PWM period spent driving forward or reverse, while two genuinely low inputs select coast ([TI DRV8833 datasheet, Table 2](https://www.ti.com/lit/gpn/DRV8833)). The current `duty(..., 0)` implementation needs the hardware check described below, so this electrical state should not be assumed solely from the method name.
 
 ```python
 motor = Motor(controller, 1)
 motor.speed = 60      # 60% forward
-motor.speed = -100    # full reverse
-motor.speed = 0       # release() — coast to a stop
+motor.speed = -99     # full commanded reverse
+motor.speed = 0       # calls release(); intended zero-drive state
 ```
 
-`release()` now correctly zeroes both direction channels:
+Both `release()` and the new `stop()` method, in effect, make the same two calls:
 
 ```python
-def release(self):
+def stop(self):
     self.controller.duty(self.channel_fwd, 0)
     self.controller.duty(self.channel_rev, 0)
+    self._speed = 0
+
+def release(self):
+    self.stop()
 ```
 
-so calling `motor.release()` (or setting `speed = 0`) reliably stops the motor regardless of which direction it was last driven in — this is a good habit to rely on whenever you want to guarantee a motor is fully stopped, for example at the start or end of a program.
+At the `Motor` API level, `stop()`, `release()`, and assigning `speed = 0` therefore request the same output state. 
+The separate name is useful for compatibility with programs written for other motor-controller APIs.
 
-### The `speed = 100` bug, and why boundary values are dangerous in embedded PWM code
+### Reversal protection: stop, wait 50 ms, then drive the other way
+
+A rotating brushed DC motor presents two related electrical effects during reversal. First, winding inductance resists an instantaneous change in current: TI's DRV8833 datasheet says interrupted motor current must continue to flow as **recirculation current**, with the `0,0` input state defined as coast/fast decay and the `1,1` state as brake/slow decay ([TI DRV8833 datasheet, Sections 7.3.2–7.3.3](https://www.ti.com/lit/gpn/DRV8833)). Second, while the rotor is still turning, the motor also acts as a generator and can return energy to the supply; TI therefore recommends local bulk capacitance and voltage-rating margin for cases where “the motor transfers energy to the supply” ([TI DRV8833 datasheet, Section 9.1](https://www.ti.com/lit/gpn/DRV8833)). “Back-EMF” is often used loosely for this whole reversal transient, although inductive current persistence and speed-generated EMF are physically distinct contributions.
+
+Immediately commanding the opposite bridge polarity asks the winding current to reverse while existing current and mechanical energy are still present. TI's current-recirculation application note states that an inductive load's existing current direction initially persists even when opposing voltage is applied, and that the bridge needs a safe decay path to avoid damage to its power switches ([TI, *Current Recirculation and Decay Modes*, Section 1](https://www.ti.com/lit/an/slva321a/slva321a.pdf)). TI's H-bridge training material likewise explains that dead time—all FETs off—lets current decay, and labels coast as fast decay and brake as slow decay ([TI, *Brushed DC Motor 2: The H-Bridge*, pp. 5–7](https://www.ti.com/content/dam/videos/external-videos/en-us/4/3816841626001/6059539558001.mp4/subassets/brushed_dc_motor_2-the_h-bridge.pdf)).
+
+The new setter implements a simple, open-loop mitigation:
+
+```python
+def speed(self, x):
+    duty = int(remap(abs(x), 0, 99.99, 0, 4095))
+    if (x * self._speed) < 0:   # opposite signs: a direct reversal
+        self.stop()             # request zero output on both channels
+        sleep_ms(50)            # fixed decay interval
+    # apply the requested forward/reverse channel state ...
+    self._speed = x
+```
+
+`Motor.__init__` now initialises `_speed = 0`, so the first command cannot be mistaken for a reversal. A delay occurs only when two consecutive non-zero commands have opposite signs; `+60 → -60` triggers it, while `+60 → 0 → -60` does not because assigning zero updates `_speed` to zero. During a direct reversal the method blocks the caller for at least 50 ms, requests zero on both bridge-input channels, then applies the target duty in one step. It does **not** ramp through intermediate speeds, examine the DRV8833 `nFAULT` output, measure winding current, or verify that either electrical current or rotor speed has actually reached zero.
+
+The 50 ms interval is therefore a pragmatic fixed settling time, not a universal motor constant. Actual current-decay and spin-down time depends on the motor's inductance, resistance, speed, inertia, load, supply, decay path, and local capacitance. The DRV8833 itself also provides internal dead time and overcurrent protection, but TI explicitly presents current regulation, protection, supply bypassing, and system-level testing as separate design concerns ([TI DRV8833 datasheet, Sections 6.5, 7.3.3, 7.3.5 and 9.1](https://www.ti.com/lit/gpn/DRV8833)). Software delay should therefore be treated as an additional mitigation, not a replacement for correct current sizing, current limiting, supply decoupling, and hardware validation.
+
+### The historical `speed = 100` bug, and why the new maximum is 99
 
 The previous driver revision had a genuine bug: commanding `motor.speed = 100` (full forward) or `motor.speed = -100` (full reverse) behaved exactly like `motor.speed = 0` — the motor didn't reach full speed, it stopped. Tracing through the old code shows precisely why, and it's a useful lesson in how dangerous it is for a calculation to land exactly on a boundary value.
 
@@ -392,15 +428,19 @@ if invert:
 
 A commanded duty of exactly 4095 becomes exactly 0 after inversion — and `value == 0` is one of `duty()`'s two special-cased boundary values, writing `self.pwm(index, 0, 4095)` to the chip. Now compare that to what `Motor.release()` writes to the very same channel: `self.controller.duty(self.channel_fwd, 0)`, which (with the default `invert=False`) also hits the `value == 0` branch and writes the *identical* `self.pwm(index, 0, 4095)`. **Full forward speed and a fully released motor were writing the same register values to the forward channel** — not because of some subtle electrical issue, but because two logically distinct commanded states (`100` and `0`) happened to alias to the exact same code path once you follow the arithmetic all the way through.
 
-The fix simply changes the remap denominator from `100` to `100.001`:
+The 11 July revision fixed this by changing the remap denominator from `100` to `100.001`:
 
 ```python
-duty = int(remap(abs(x), 0, 100.001, 0, 4095))   # fixed version
+duty = int(remap(abs(x), 0, 100.001, 0, 4095))   # 11 July fix
 ```
 
-`remap(100, 0, 100.001, 0, 4095)` now works out to `4095 * 100/100.001 ≈ 4094.96`, which `int()` truncates down to `4094` — one count short of the boundary. After inversion, `4095 - 4094 = 1`, which falls through to `duty()`'s normal `else` branch (`self.pwm(index, 0, 1)`) instead of either special case. The practical effect on the motor of being one PWM count away from absolute maximum is imperceptible — a 1/4096 change in pulse timing — but it reliably avoids the aliasing. This is a common, pragmatic embedded-programming technique: when a calculation must never land exactly on a value that triggers different logic, nudge the input range slightly so the exact boundary becomes mathematically unreachable, rather than adding extra conditional logic to special-case it after the fact.
+`remap(100, 0, 100.001, 0, 4095)` works out to `4095 * 100/100.001 ≈ 4094.96`, which `int()` truncates down to `4094` — one count short of the boundary. The 28 August revision adopts the cross-driver convention of -99..+99 and changes the internal endpoint again:
 
-**Worth knowing — flagged for the module author to verify on hardware, not asserted as certain fact:** the `value == 0` and `value == 4095` special cases inside `PCA9685.duty()` are what caused the aliasing above, and the same mechanism could plausibly also affect `Servo.release()` and `Motor.release()`, both of which deliberately call `duty(channel, 0)` — that is the intended, designed-for way to reach the `value == 0` boundary, so it isn't buggy in the same sense as the `speed = 100` aliasing was. But it's worth checking with a scope or logic analyser that the specific register pattern this boundary case writes (`pwm(index, 0, 4095)`) actually produces the fully-off output the name `release()` promises. The PCA9685 datasheet's documented technique for a guaranteed full-off state uses register value **4096** (a 13th "override" bit), not 4095 ([NXP PCA9685 datasheet](https://www.nxp.com/docs/en/data-sheet/PCA9685.pdf)). Comparing this driver's boundary branches against the plain formula its own `else` branch uses for every other duty value (`pwm(index, 0, value)`, where a larger `value` means more ON-time) suggests the two special cases may be swapped relative to their evident intent — worth double-checking, though it doesn't affect the `speed = 100` fix above, which sidesteps the boundary case entirely rather than depending on what it actually does.
+```python
+duty = int(remap(abs(x), 0, 99.99, 0, 4095))   # current version
+```
+
+At the documented maximum `x = 99`, this produces 4054 before inversion, comfortably clear of 4095. Because `remap()` saturates rather than validates, however, `abs(x) >= 99.99` still produces exactly 4095 and re-enters the boundary path. Applications should therefore honour the documented ±99 limit rather than assuming larger values are harmless synonyms for full speed.
 
 ### Ratings you must respect
 
@@ -408,7 +448,7 @@ The DRV8833 accepts a motor supply from about 2.7 V to 10.8 V, and depending on 
 
 ### Motor power vs. logic power
 
-Like servos, DC motors need a **separate, adequately rated motor supply** (VM) distinct from the Kookaberry/PCA9685 logic supply, with grounds tied together so the IN1/IN2 logic levels are referenced correctly ([SparkFun TB6612FNG hookup guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)). Motors are **inductive loads** — when current through them is switched, they resist the change and can generate damaging voltage spikes; H-bridge driver ICs like the DRV8833 include internal circuitry to manage this (often described in terms of "fast decay/coast" vs "slow decay/brake" behaviour), which is part of why you should always drive a motor through a proper H-bridge chip rather than switching it with a bare transistor ([TI application note on current recirculation](https://www.ti.com/lit/an/slva321a/slva321a.pdf?ts=1783147782112)).
+Like servos, DC motors need a **separate, adequately rated motor supply** (VM) distinct from the Kookaberry/PCA9685 logic supply, with grounds tied together so the IN1/IN2 logic levels are referenced correctly ([SparkFun TB6612FNG hookup guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)). Motors are **inductive loads** — when current through them is switched, they resist the change and can generate damaging voltage spikes; H-bridge driver ICs like the DRV8833 include internal circuitry to manage this (often described in terms of "fast decay/coast" vs "slow decay/brake" behaviour), which is part of why you should always drive a motor through a proper H-bridge chip rather than switching it with a bare transistor ([TI application note on current recirculation](https://www.ti.com/lit/an/slva321a/slva321a.pdf)).
 
 ---
 
@@ -509,9 +549,9 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 | Class | Construct with | Key methods/properties | What they physically do |
 |---|---|---|---|
 | `PCA9685` | `PCA9685(i2c, address=0x40, freq=50)` | `.frequency`, `.duty(index, value)`, `.pwm(index, on, off)`, `.reset()` | Low-level 16-channel PWM generator; everything else builds on this. |
-| `Servo` (angular) | `Servo(controller, channel, min_us=1000, max_us=2000, degrees=180, midpoint_us=None, range_us=None, freq_compensation=0, clockwise=True, mid_zero=True)` | `.angle = x` (0..degrees, or roughly -degrees/2..+degrees/2 if `mid_zero=True`), `.release()` | Sends a calibrated, oscillator-corrected pulse width commanding a target shaft position, with adjustable direction and zero-point convention. |
-| `Servo` (continuous) | Same class, calibrated around the servo's neutral pulse | `.speed = x` (-1..+1), `.release()` | Sends a pulse width that the servo interprets as speed + direction, not position. `clockwise`/`mid_zero` do not apply here. |
-| `Motor` | `Motor(controller, motor)` (motor 1–4) | `.speed = x` (-100..+100), `.release()` | PWMs one of two H-bridge logic inputs to set direction and speed of a DC motor. `.release()` now correctly stops both directions. |
+| `Servo` (angular) | `Servo(controller, channel, min_us=1000, max_us=2000, degrees=180, midpoint_us=None, range_us=None, freq_compensation=0, clockwise=True, mid_zero=True)` | `.angle = x` (0..degrees, or roughly -degrees/2..+degrees/2 if `mid_zero=True`), `.stop()`, `.release()` | Sends a calibrated, oscillator-corrected pulse width commanding a target shaft position, with adjustable direction and zero-point convention. `.stop()` and `.release()` make identical zero-duty requests. |
+| `Servo` (continuous) | Same class, calibrated around the servo's neutral pulse | `.speed = x` (-99..+99), `.stop()`, `.release()` | Sends a pulse width that the servo interprets as speed + direction. `speed = 0` commands neutral; `.stop()` and `.release()` make identical zero-duty requests. `clockwise`/`mid_zero` do not apply here. |
+| `Motor` | `Motor(controller, motor)` (motor 1–4) | `.speed = x` (-99..+99), `.stop()`, `.release()` | PWMs one of two H-bridge logic inputs to set direction and speed. A direct sign reversal inserts `stop()` plus a fixed 50 ms delay; `.stop()` and `.release()` are implemented identically. |
 | `Stepper` | `Stepper(controller, stepper, steps_per_rev=512, rpm=6)` (stepper 1–2) | `.step(n, hold=False, rpm=None)`, `.angle(a, hold=False, rpm=None)` | Sequences four H-bridge logic inputs to advance a bipolar stepper by discrete steps; `.angle()` now rounds negative angles correctly. |
 
 **Channel map used by this driver:** servo channels 1–16 map straight through to PCA9685 channels 0–15 (`channel - 1`); motors 1–4 and steppers 1–2 both use PCA9685 channels 8–15 (two channels per motor, four per stepper) — so a `Motor` and a `Stepper` object must never be constructed for overlapping channel ranges on the same board. On the **Quokka board specifically**, servo channels 9–16 physically overlap the motor/stepper H-bridge outputs and shouldn't be used for `Servo` objects, even though the software will accept them; on other PCA9685 boards without a fixed motor/servo split (e.g. a generic 16-channel breakout), all 16 channels are free for `Servo` use. The **Core Electronics PiicoDev Servo Driver** exposes only 4 channels, wires them in *reverse* order relative to this driver's straight-through numbering, and defaults to I2C address `0x44` instead of `0x40` — see Section 2.
@@ -531,7 +571,8 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 - [Texas Instruments DRV8833 datasheet](https://www.ti.com/lit/gpn/DRV8833)
 - [Texas Instruments DRV8833 product page](https://www.ti.com/product/DRV8833)
 - [Pololu DRV8833 Dual Motor Driver Carrier guide](https://www.pololu.com/product-info-merged/2130)
-- [Texas Instruments — Understanding Motor Driver Current Ratings / recirculation (application note)](https://www.ti.com/lit/an/slva321a/slva321a.pdf?ts=1783147782112)
+- [Texas Instruments — Current Recirculation and Decay Modes (application note)](https://www.ti.com/lit/an/slva321a/slva321a.pdf)
+- [Texas Instruments — Brushed DC Motor 2: The H-Bridge](https://www.ti.com/content/dam/videos/external-videos/en-us/4/3816841626001/6059539558001.mp4/subassets/brushed_dc_motor_2-the_h-bridge.pdf)
 - [SparkFun TB6612FNG Hookup Guide](https://learn.sparkfun.com/tutorials/tb6612fng-hookup-guide/all)
 - [Parallax Continuous Rotation Servo guide](https://learn.parallax.com/kickstarts/parallax-continuous-rotation-servo/)
 - [Oriental Motor — Stepper Motor Basics](https://www.orientalmotor.com/stepper-motors/technology/stepper-motor-basics.html)
@@ -545,4 +586,4 @@ Winding inductance limits how fast current can rise in a coil each time it's ene
 - [Core Electronics PiicoDev Servo Driver (4 Channel) — product page](https://core-electronics.com.au/piicodev-servo-driver.html)
 - [Core Electronics PiicoDev Servo Driver — Getting Started Guide](https://core-electronics.com.au/guides/piicodev-servo-driver-pca9685-getting-started-guide/)
 - [Core Electronics `PiicoDev_Servo.py` source (GitHub)](https://github.com/CoreElectronics/CE-PiicoDev-PyPI/blob/main/src/PiicoDev_Servo.py)
-- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation), 11 July 2026 revision
+- Uploaded driver: `pca9685.py` (T. Strasser, AustSTEM Foundation), 28 August 2026 revision
