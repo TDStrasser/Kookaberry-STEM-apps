@@ -3,7 +3,7 @@ __name__ = 'SenseRx'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 17 October 2019
-# Date last modified: 8 May 2021 - added SensePT100 to table
+# Date last modified: 10 September 2026 - added test for radio presence as some Pico Kookaberries do not have a radio
 # MicroPython Version: 1.12 for the Kookaberry V4-06
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -92,6 +92,17 @@ for fn in modules:
 from machine import RTC, UART
 import kooka, time, json, fonts
 import doomsday    # module converts date to day of week
+
+disp = kooka.display    # initialise the display
+
+if not bool(kooka.radio): # Test for absence of a radio and exit if radio is absent
+  disp.print(__name__)
+  disp.print('requires a radio')
+  disp.print('radio is absent')
+  disp.print('Exiting program')
+  time.sleep(5)
+  raise(SystemExit)
+
 from Kapputils import config    # utility to read the configuration file
 disp_lines = ['']*5
 disp_length = len(disp_lines) - 1
@@ -127,7 +138,7 @@ rtime = [0]*6   # Kookaberry time tuple [YYYY,MM,DD,HH,MM,SS]
 ftime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]
 rtc = RTC()    # instantiate the Real Time Clock
 time_sent = False    # one shot flag for sending time updates
-
+  
 params = config('Kookapp.cfg')   # read the configuration file
 # flag to set up the radio for later use
 radio_on = False
@@ -141,7 +152,6 @@ f = open(fname,'w+')    # open file for writing - overwrites any prior file
 f.write('%s\n' % ','.join(column_h) )    # write the headings
 f.close()
 collect()
-disp = kooka.display    # initialise the display
 msg_count = 0
 
 while not kooka.button_a.was_pressed():
