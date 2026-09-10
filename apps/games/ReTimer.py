@@ -3,8 +3,8 @@ __name__ = 'ReTimer'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 02 July 2020
-# Date last modified: 22 November 2020
-# Version 1.2
+# Date last modified: 10 September 2026 - inserted a test for whether a radio is present as some Pico Kookaberries don't have one.
+# Version 1.3
 # MicroPython Version: 1.12 for the Kookaberry V4-05
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -43,17 +43,21 @@ ktime = [0]*8   # Kookaberry time tuple [YYYY,MM,DD,WD,HH,MM,SS,SUBS]    # RTC t
 rtc = machine.RTC()    # instantiate the Real Time Clock
 
 disp = kooka.display    # initialise the OLED display
-params = config('Kookapp.cfg')   # read the configuration file
-# set up the radio for later use
-kooka.radio.enable()
-chan = int(params['CHANNEL'])      # use channel from the configuration file
-baud = int(params['BAUD'])      # use data rate from the configuration file
-pwr = int(params['POWER'])      # use transmit power from the configuration file
-kooka.radio.config(channel=chan, data_rate=baud, power=pwr, length=40) # set up the radio
-id=''
-for i in range(0,min(2,len(params['NAME']))): id = id + params['NAME'][i]
-for i in range(0,min(2,len(params['SURNAME']))): id = id + params['SURNAME'][i]
-sndmsg = [id,'ReT','time']
+
+has_radio = bool(kooka.radio) # Test whether a radio is present
+
+if has_radio: # Configure the radio only if present
+  params = config('Kookapp.cfg')   # read the configuration file
+  # set up the radio for later use
+  kooka.radio.enable()
+  chan = int(params['CHANNEL'])      # use channel from the configuration file
+  baud = int(params['BAUD'])      # use data rate from the configuration file
+  pwr = int(params['POWER'])      # use transmit power from the configuration file
+  kooka.radio.config(channel=chan, data_rate=baud, power=pwr, length=40) # set up the radio
+  id=''
+  for i in range(0,min(2,len(params['NAME']))): id = id + params['NAME'][i]
+  for i in range(0,min(2,len(params['SURNAME']))): id = id + params['SURNAME'][i]
+  sndmsg = [id,'ReT','time']
 
 delay_timer = time.ticks_ms()    # timer used for delays and timing samples
 state = 0     # 0 waiting to start, 1-3 LEDs sequence, 4 LEDs off, 5 timing
@@ -99,8 +103,9 @@ while not kooka.button_a.was_pressed():
         f = open(fname, 'a+')    # log the reaction time
         f.write('%s,%d\n' % (timestr, re_time))
         f.close()
-        sndmsg[2] = '%0.3f' % (re_time / 1000)    # send time in seconds
-        kooka.radio.send(ujson.dumps(sndmsg))    # send the radio message
+        if has_radio:
+          sndmsg[2] = '%0.3f' % (re_time / 1000)    # send time in seconds
+          kooka.radio.send(ujson.dumps(sndmsg))    # send the radio message
         state = 0
         
 # Prepare the display
@@ -109,7 +114,7 @@ while not kooka.button_a.was_pressed():
     disp.text('%s' % __name__, 0, 10)
     if state == 0: disp.text('Time: %dmsec' % re_time, 0, 20)
     disp.setfont(fonts.mono6x7)
-    disp.text('%s' % id, 100, 10)
+    if has_radio: disp.text('%s' % id, 100, 10)
     disp.text('A-exit     B-start', 0, 63)
     disp.text('Press B -', 0, 30)
     if state == 0: disp.text('to start', 10, 40)
@@ -118,8 +123,9 @@ while not kooka.button_a.was_pressed():
     disp.show()
 
 # Check for time updates
-    msg = kooka.radio.receive()    #listen for a message
-    if msg:    # radio has received a message
+    if has_radio: # Only if there is a radio
+      msg = kooka.radio.receive()    #listen for a message
+      if msg:    # radio has received a message
         print(msg)
         if len(msg) == 21 and msg[1].isdigit() and msg[2].isdigit() and msg[3].isdigit() and msg[4].isdigit():  # is a time update so process
             rtime = ujson.loads(msg)
@@ -131,6 +137,6 @@ while not kooka.button_a.was_pressed():
         else:  pass  # not a time update so ignore
         
 # Clean up and exit
-kooka.radio.disable()    # turn off the radio
+if has_radio: kooka.radio.disable()    # turn off the radio
 
 

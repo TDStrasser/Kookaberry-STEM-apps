@@ -3,7 +3,7 @@ __name__ = 'Firefly'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 15 December 2020
-# Date last modified: 17 December 2020
+# Date last modified: 10 September 2026 - added test for radio being present as some Pico configurations do not have one
 # Version 1.0
 # MicroPython Version: 1.12 for the Kookaberry V4-06
 # This program is free software: you can redistribute it and/or modify
@@ -63,14 +63,22 @@ firefly_off = bytearray([0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0
 ffly = [framebuf.FrameBuffer(firefly_off, 43, 40, framebuf.MONO_VLSB),framebuf.FrameBuffer(firefly_on, 43, 40, framebuf.MONO_VLSB)]
 
 disp = kooka.display    # instantiate the display
-params = config('Kookapp.cfg')   # read the configuration file
-# set up the radio for later use
-kooka.radio.enable()
-chan = int(params['CHANNEL'])      # use channel from the configuration file
-baud = int(params['BAUD'])      # use data rate from the configuration file
-pwr = int(params['POWER'])      # use transmit power from the configuration file
+if bool(kooka.radio): # Check whether a radio is present and then configure it
+  params = config('Kookapp.cfg')   # read the configuration file
+  # set up the radio for later use
+  kooka.radio.enable()
+  chan = int(params['CHANNEL'])      # use channel from the configuration file
+  baud = int(params['BAUD'])      # use data rate from the configuration file
+  pwr = int(params['POWER'])      # use transmit power from the configuration file
 
-kooka.radio.config(channel=chan, data_rate=baud, power=pwr) # set up the radio
+  kooka.radio.config(channel=chan, data_rate=baud, power=pwr) # set up the radio
+
+else: # No radio, so dipay a message and then quit
+  disp.print('No radio')
+  disp.print('Quitting')
+  time.sleep(2) # Wait a while so display can be read
+  raise(SystemExit)
+  
 id = ''
 for i in range(0,min(2,len(params['NAME']))): id = id + params['NAME'][i]
 for i in range(0,min(2,len(params['SURNAME']))): id = id + params['SURNAME'][i]
