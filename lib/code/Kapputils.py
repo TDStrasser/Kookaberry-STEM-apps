@@ -2,7 +2,7 @@
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 26 July 2018
-# Date last modified: 21 June 2020
+# Date last modified: 10 September 2026 - corrected an error that left out the dictionary parameter 'ID'
 # MicroPython Version: 1.9.4 for the Kookaberry
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -64,7 +64,8 @@ def config(filename):
         'MAX2':'100',
         'CHANNEL':'7',
         'BAUD':'0',
-        'POWER':'6'}
+        'POWER':'6',
+        'ID': '1'}
 #   Set up the regular expression
     p = re.compile(r'\W+') # will split a string into substrings of words - non alphanumerics are ignored
 

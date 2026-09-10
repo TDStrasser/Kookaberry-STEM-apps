@@ -4,7 +4,7 @@ __name__ = 'BalanceMe'
 # Copyright: The AustSTEM Foundation Limited
 # Author: Tony Strasser
 # Date created: 29 August 2018
-# Date last modified: 22 November 2020
+# Date last modified: 10 September 2020 - detect if radio is present to cater for Pico processors not in Kookaberry form factor.
 # MicroPython Version: 1.12 for the Kookaberry V4-05
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -21,6 +21,8 @@ __name__ = 'BalanceMe'
 import math, machine, kooka, fonts, time, json
 from Kapputils import config    # utility to read the configuration file
 lesson = 'KLP002'    # Kookaberry Lesson Plan No
+has_radio = bool(kooka.radio) # Detect whether a radio is present
+has_accel = bool(kooka.accel) # Requires an accelerometer - detect if there is one
 
 # connect an active buzzer to P2
 b_plug = 'P2' # port to use for the buzzer - change this to suit
@@ -47,23 +49,34 @@ reset_timer = 0    # timer resets the race if excursion is too long
 reset_length = 5000    # maximum excursion time
 reset_start = 0
 
-params = config('Kookapp.cfg')   # read the configuration file
+if has_radio: # Only do this if a radio is present and configured
+  params = config('Kookapp.cfg')   # read the configuration file
 
-# initialise
-kooka.radio.enable()         # turn radio on
-chan = int(params['CHANNEL'])      # use channel from the configuration file
-baud = int(params['BAUD'])      # use data rate from the configuration file
-pwr = int(params['POWER'])      # use transmit power from the configuration file
+  # initialise
+  kooka.radio.enable()         # turn radio on
+  chan = int(params['CHANNEL'])      # use channel from the configuration file
+  baud = int(params['BAUD'])      # use data rate from the configuration file
+  pwr = int(params['POWER'])      # use transmit power from the configuration file
 
-kooka.radio.config(channel=chan, data_rate=baud, power=pwr) # set up the radio
+  kooka.radio.config(channel=chan, data_rate=baud, power=pwr) # set up the radio
+
+  radio_msg = [lesson, '%d' % params['ID'],'10','0','0']    # initialise the radio message
 
 disp = kooka.display    # initialise the display
+
+# Quit if there is no accelerometer on board
+if not has_accel:
+  disp.print('No accelerometer')
+  disp.print('Exiting')
+  time.sleep(2) # Keep the display visible for a while
+  raise(SystemExit)
+  
+
 # Prepare the logging file
 fname = __name__ + '.CSV'
 f = open(fname,'w+')    # open file for writing
 f.write('ID,Angle,Time,Count\n')  # write headings
 f.close()    # Close file to guard against corruption
-radio_msg = [lesson, '%d' % params['ID'],'10','0','0']    # initialise the radio message
 
 while not kooka.button_a.was_pressed():
     t0 = time.ticks_ms()    # mark the time at loop start
@@ -98,14 +111,14 @@ while not kooka.button_a.was_pressed():
             f = open(fname,'a+')    # record results when race stopped
             f.write('%s,%d,%d,%d\n' % (params['ID'],limit_angle,int(racing_timer/1000),oops_counter))
             f.close()
-            # broadcast the results via the radio
-            radio_msg[2] = str(limit_angle)
-            radio_msg[3] = str(int(racing_timer/1000))
-            radio_msg[4] = str(oops_counter)
-            msg = ""
-            for s in radio_msg:
+            if has_radio: # broadcast the results via the radio if present
+              radio_msg[2] = str(limit_angle)
+              radio_msg[3] = str(int(racing_timer/1000))
+              radio_msg[4] = str(oops_counter)
+              msg = ""
+              for s in radio_msg:
                 msg += s + ","
-            kooka.radio.send(msg)
+              kooka.radio.send(msg)
 
     # calculate the angle of the device
     x, y, _ = kooka.accel.get_xyz()
@@ -163,4 +176,4 @@ while not kooka.button_a.was_pressed():
 # Clean up and exit
 buzzer.value(0)    # Turn the buzzer off
 f.close()        # close any open file
-kooka.radio.disable()    # turn packet radio off
+if has_radio: kooka.radio.disable()    # turn packet radio off
